@@ -1,26 +1,15 @@
 {
-  "scraped_at": "2026-04-13T01:33:20.929212",
+  "scraped_at": "2026-04-13T10:57:48.222997",
   "date": "2026-04-13",
-  "total_jobs": 16,
+  "total_jobs": 15,
   "experience_range": "3-5 years",
   "location": "Seattle, WA",
   "jobs": [
     {
-      "Job Title": "Software Engineer - Backend",
-      "Company": "Snowflake",
-      "Location": "Bellevue, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4214697219",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer",
+      "Job Title": "Software Engineer 2",
       "Company": "Microsoft",
       "Location": "Redmond, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4387937971",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4378774357",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -28,10 +17,21 @@
       "Salary": ""
     },
     {
-      "Job Title": "Backend Software Engineer",
-      "Company": "Adobe",
+      "Job Title": "Software Engineer - Open Search",
+      "Company": "IBM",
+      "Location": "Bellevue, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399543667",
+      "Source": "linkedin",
+      "Date Posted": "",
+      "Type": "",
+      "Description": "",
+      "Salary": ""
+    },
+    {
+      "Job Title": "Software Engineer - Open Search",
+      "Company": "IBM",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4378206696",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399526911",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -39,10 +39,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Software Engineer (Starlink)",
-      "Company": "SpaceX",
-      "Location": "Redmond, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4369947372",
+      "Job Title": "Software Development Engineer II",
+      "Company": "Blue Origin",
+      "Location": "",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4361735055",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -50,43 +50,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "AI Native Software Engineer",
-      "Company": "Remitly",
+      "Job Title": "Software Engineer III, Google Beam",
+      "Company": "Google",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4388733572",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer, Starlink Growth",
-      "Company": "SpaceX",
-      "Location": "Redmond, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4369998863",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Infrastructure Software Engineer",
-      "Company": "Overland AI",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4353181052",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer, Desktop",
-      "Company": "Anthropic",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4322330173",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399621426",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -105,10 +72,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "AI-First Software Engineer",
-      "Company": "Planet DDS",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4342292447",
+      "Job Title": "Software Engineer, Kubernetes",
+      "Company": "CoreWeave",
+      "Location": "Bellevue, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4252418191",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -116,10 +83,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Software Engineer, Business Technology",
-      "Company": "Anthropic",
+      "Job Title": "Software Develoment Engineer III - Backend",
+      "Company": "Purpose Brands, LLC",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4322510159",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399194633",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -127,10 +94,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Software Engineer, Android",
-      "Company": "Anthropic",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4322199946",
+      "Job Title": "Software Engineer III, Infrastructure, Google Cloud Compute Infrastructure",
+      "Company": "Google",
+      "Location": "Kirkland, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399659168",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -138,10 +105,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Software Engineer III - Infrastructure Platforms",
-      "Company": "JPMorganChase",
+      "Job Title": "Software Development Engineer III - React",
+      "Company": "Purpose Brands, LLC",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4363545376",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399190728",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -149,10 +116,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Software Engineer, E-Commerce AI Platform - USDS",
-      "Company": "TikTok USDS Joint Venture",
+      "Job Title": "Backend Engineer, Core Technology",
+      "Company": "Stripe",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4401023520",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4190707141",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -160,10 +127,10 @@
       "Salary": ""
     },
     {
-      "Job Title": "Satellite Flight Software Engineer III - TeraWave",
-      "Company": "Blue Origin",
-      "Location": "",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4360546479",
+      "Job Title": "Software Development Engineer III - Backend",
+      "Company": "Purpose Brands, LLC",
+      "Location": "Seattle, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399184728",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
@@ -171,10 +138,32 @@
       "Salary": ""
     },
     {
-      "Job Title": "Machine Learning Scientist III - Multi-Product AI",
-      "Company": "Expedia Group",
+      "Job Title": ".Net Full Stack Developer",
+      "Company": "Tata Consultancy Services",
       "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4388606229",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4388986466",
+      "Source": "linkedin",
+      "Date Posted": "",
+      "Type": "",
+      "Description": "",
+      "Salary": ""
+    },
+    {
+      "Job Title": "Technical Java Full Stack Developer",
+      "Company": "Tata Consultancy Services",
+      "Location": "Seattle, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4392898065",
+      "Source": "linkedin",
+      "Date Posted": "",
+      "Type": "",
+      "Description": "",
+      "Salary": ""
+    },
+    {
+      "Job Title": ".Net Full Stack Developer",
+      "Company": "Tata Consultancy Services",
+      "Location": "Bellevue, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4399647203",
       "Source": "linkedin",
       "Date Posted": "",
       "Type": "",
