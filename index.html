@@ -59,13 +59,7 @@
     const SOURCE_COLORS = { indeed: "#2164f3", linkedin: "#0a66c2", zip_recruiter: "#00a028", glassdoor: "#0caa41", jobright: "#6c5ce7" };
     const SOURCE_ICONS = { indeed: "IN", linkedin: "Li", zip_recruiter: "ZR", glassdoor: "GD", jobright: "JR" };
 
-    const SAMPLE_JOBS = [
-      { "Job Title": "Software Engineer II", Company: "Amazon", Location: "Seattle, WA", "Apply Link": "https://amazon.jobs", Source: "linkedin", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$138,000–$185,000 yearly", Description: "Design and build scalable distributed systems for AWS. 3+ years of experience with Java, Python, or Go. Work with cross-functional teams to deliver customer-facing features..." },
-      { "Job Title": "Full Stack Developer", Company: "Zillow Group", Location: "Seattle, WA", "Apply Link": "https://zillow.com/careers", Source: "indeed", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$130,000–$168,000 yearly", Description: "Build consumer-facing real estate tools using React and Node.js. 3-5 years experience in full stack development..." },
-      { "Job Title": "SDE II", Company: "Microsoft", Location: "Redmond, WA", "Apply Link": "https://careers.microsoft.com", Source: "linkedin", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$145,000–$198,000 yearly", Description: "Build cloud infrastructure features for Azure. 3-5 years of software development experience..." },
-      { "Job Title": "Software Engineer", Company: "Stripe", Location: "Seattle, WA", "Apply Link": "https://stripe.com/jobs", Source: "indeed", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$150,000–$195,000 yearly", Description: "Build payment infrastructure serving millions of businesses. 3+ years of professional engineering experience..." },
-      { "Job Title": "Backend Engineer", Company: "DoorDash", Location: "Seattle, WA", "Apply Link": "https://careers.doordash.com", Source: "glassdoor", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$140,000–$185,000 yearly", Description: "Scale the logistics platform handling millions of daily deliveries. 3+ years building backend services..." },
-    ];
+    const SAMPLE_JOBS = [];
 
     // ── Helpers ──
     function parseCSV(text) {
