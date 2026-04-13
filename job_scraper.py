@@ -170,11 +170,7 @@ def scrape_all_jobs(hours_back=24):
     df = pd.concat(all_jobs, ignore_index=True)
     print(f"\n  Total raw results: {len(df)}")
 
-    df["_dedup"] = (
-        df["title"].str.lower().str.strip() + "|" +
-        df["company"].str.lower().str.strip()
-    )
-    df = df.drop_duplicates(subset="_dedup").drop(columns=["_dedup"])
+    df = df.drop_duplicates(subset="job_url", keep="first")
     print(f"   After dedup: {len(df)}")
 
     # Block current/past employers

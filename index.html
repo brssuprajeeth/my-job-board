@@ -13,26 +13,66 @@
     ::selection { background: rgba(96,165,250,0.3); }
     input, select, button { font-family: inherit; }
     ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+    .sync-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+    .sync-dot.ok { background: #34d399; } .sync-dot.saving { background: #fbbf24; } .sync-dot.err { background: #ef4444; }
   </style>
 </head>
 <body>
   <div id="root"></div>
 
+  <!-- React 18 -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <script type="text/babel" data-type="module">
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAIY_sP-_M0TrAQ7qTuWIFoquX5gfQhRVY",
+      authDomain: "job-board-23.firebaseapp.com",
+      projectId: "job-board-23",
+      storageBucket: "job-board-23.firebasestorage.app",
+      messagingSenderId: "351485638043",
+      appId: "1:351485638043:web:f0800c3135bdb5e4141d3e",
+      measurementId: "G-F1L51FMGH3"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Expose Firebase functions globally for the React app
+    window._fb = {
+      async loadState() {
+        try {
+          const snap = await getDoc(doc(db, "job-board", "user-state"));
+          if (snap.exists()) return snap.data();
+          return null;
+        } catch (e) { console.error("Firebase load error:", e); return null; }
+      },
+      async saveState(data) {
+        try {
+          await setDoc(doc(db, "job-board", "user-state"), {
+            ...data,
+            updated: new Date().toISOString(),
+          });
+          return true;
+        } catch (e) { console.error("Firebase save error:", e); return false; }
+      }
+    };
+
+    // Signal that Firebase is ready
+    window._fbReady = true;
+    window.dispatchEvent(new Event("firebase-ready"));
+  </script>
+
+  <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
     const DEFAULT_FETCH_URL = "data/jobs_latest.json";
-    const STORAGE_KEY = "seattle-swe-job-board-v4";
-
-    const storage = {
-      get(key) { try { const v = localStorage.getItem(key); return v ? { value: v } : null; } catch { return null; } },
-      set(key, value) { try { localStorage.setItem(key, value); return { key, value }; } catch { return null; } },
-      delete(key) { try { localStorage.removeItem(key); return { key, deleted: true }; } catch { return null; } },
-    };
+    const LOCAL_KEY = "seattle-swe-job-board-v4-cache";
 
     const SOURCES = ["All", "indeed", "linkedin", "zip_recruiter", "glassdoor", "jobright"];
     const SOURCE_LABELS = { indeed: "Indeed", linkedin: "LinkedIn", zip_recruiter: "ZipRecruiter", glassdoor: "Glassdoor", jobright: "JobRight" };
@@ -40,15 +80,13 @@
     const SOURCE_ICONS = { indeed: "IN", linkedin: "Li", zip_recruiter: "ZR", glassdoor: "GD", jobright: "JR" };
 
     const SKIP_REASONS = [
-      { id: "visa", label: "Visa/Sponsorship", icon: "🛂", color: "#f97316" },
-      { id: "salary", label: "Low Salary", icon: "💰", color: "#eab308" },
-      { id: "location", label: "Bad Location", icon: "📍", color: "#ef4444" },
-      { id: "stack", label: "Wrong Tech Stack", icon: "🔧", color: "#8b5cf6" },
-      { id: "company", label: "Company Culture", icon: "🏢", color: "#ec4899" },
-      { id: "other", label: "Other", icon: "⊘", color: "#71717a" },
+      { id: "visa", label: "Visa/Sponsorship", icon: "\uD83D\uDEC2", color: "#f97316" },
+      { id: "salary", label: "Low Salary", icon: "\uD83D\uDCB0", color: "#eab308" },
+      { id: "location", label: "Bad Location", icon: "\uD83D\uDCCD", color: "#ef4444" },
+      { id: "stack", label: "Wrong Tech Stack", icon: "\uD83D\uDD27", color: "#8b5cf6" },
+      { id: "company", label: "Company Culture", icon: "\uD83C\uDFE2", color: "#ec4899" },
+      { id: "other", label: "Other", icon: "\u2298", color: "#71717a" },
     ];
-
-    const SAMPLE_JOBS = [];
 
     function parseCSV(text) {
       const lines = text.trim().split("\n");
@@ -69,8 +107,13 @@
     }
 
     function dedup(existing, incoming) {
-      const keys = new Set(existing.map(j => `${(j["Job Title"]||"").toLowerCase()}|${(j.Company||"").toLowerCase()}`));
-      return incoming.filter(j => !keys.has(`${(j["Job Title"]||"").toLowerCase()}|${(j.Company||"").toLowerCase()}`));
+      // Deduplicate by exact Apply Link — same company can have multiple openings for the same role
+      const links = new Set(existing.map(j => (j["Apply Link"]||"").toLowerCase().trim()));
+      return incoming.filter(j => {
+        const link = (j["Apply Link"]||"").toLowerCase().trim();
+        if (!link) return true; // keep jobs without links (can't dedup)
+        return !links.has(link);
+      });
     }
 
     function relativeDate(ds) {
@@ -84,6 +127,14 @@
       return ds;
     }
 
+    // Generate a stable unique key for a job using its apply link
+    function jobKey(job) {
+      const link = (job["Apply Link"]||"").toLowerCase().trim();
+      if (link) return link.replace(/[^a-z0-9]/g, "_").substring(0, 180);
+      // Fallback for jobs without links: title + company + source
+      return ((job["Job Title"]||"") + "|" + (job.Company||"") + "|" + (job.Source||"")).toLowerCase().replace(/[^a-z0-9|]/g, "_");
+    }
+
     function JobBoard() {
       const [allJobs, setAllJobs] = useState([]);
       const [filtered, setFiltered] = useState([]);
@@ -92,63 +143,100 @@
       const [dateFilter, setDateFilter] = useState("all");
       const [sortBy, setSortBy] = useState("date");
       const [sortDir, setSortDir] = useState("desc");
-      const [appliedJobs, setAppliedJobs] = useState(new Set());
-      const [savedJobs, setSavedJobs] = useState(new Set());
-      const [skippedJobs, setSkippedJobs] = useState({});       // { origIdx: "visa" | "salary" | ... }
+      // Use job keys instead of indices for cross-device stability
+      const [appliedKeys, setAppliedKeys] = useState(new Set());
+      const [savedKeys, setSavedKeys] = useState(new Set());
+      const [skippedKeys, setSkippedKeys] = useState({});  // { jobKey: "visa" | ... }
+      const [removedKeys, setRemovedKeys] = useState(new Set()); // permanently removed job keys
       const [importing, setImporting] = useState(false);
       const [tab, setTab] = useState("all");
-      const [showSkipped, setShowSkipped] = useState(false);     // toggle skipped in All tab
+      const [showSkipped, setShowSkipped] = useState(false);
       const [lastFetch, setLastFetch] = useState(null);
       const [fetchStatus, setFetchStatus] = useState("");
       const [expandedJob, setExpandedJob] = useState(null);
-      const [skipMenuOpen, setSkipMenuOpen] = useState(null);    // origIdx of open skip menu
+      const [skipMenuOpen, setSkipMenuOpen] = useState(null);
       const [loaded, setLoaded] = useState(false);
       const [configUrl, setConfigUrl] = useState(DEFAULT_FETCH_URL);
       const [showConfig, setShowConfig] = useState(false);
+      const [syncStatus, setSyncStatus] = useState("loading"); // loading | ok | saving | error
+      const [fbReady, setFbReady] = useState(!!window._fbReady);
       const fileRef = useRef(null);
       const skipMenuRef = useRef(null);
+      const saveTimer = useRef(null);
+
+      // Wait for Firebase
+      useEffect(() => {
+        if (window._fbReady) { setFbReady(true); return; }
+        const handler = () => setFbReady(true);
+        window.addEventListener("firebase-ready", handler);
+        return () => window.removeEventListener("firebase-ready", handler);
+      }, []);
 
       // Close skip menu on outside click
       useEffect(() => {
-        const handler = (e) => {
-          if (skipMenuRef.current && !skipMenuRef.current.contains(e.target)) setSkipMenuOpen(null);
-        };
+        const handler = (e) => { if (skipMenuRef.current && !skipMenuRef.current.contains(e.target)) setSkipMenuOpen(null); };
         document.addEventListener("mousedown", handler);
         return () => document.removeEventListener("mousedown", handler);
       }, []);
 
-      // Load
+      // Load from Firebase (with localStorage fallback)
       useEffect(() => {
-        try {
-          const result = storage.get(STORAGE_KEY);
-          if (result?.value) {
-            const data = JSON.parse(result.value);
-            setAllJobs(data.jobs || SAMPLE_JOBS);
-            setAppliedJobs(new Set(data.applied || []));
-            setSavedJobs(new Set(data.saved || []));
-            setSkippedJobs(data.skipped || {});
+        if (!fbReady) return;
+        (async () => {
+          setSyncStatus("loading");
+          let data = null;
+          try {
+            data = await window._fb.loadState();
+          } catch (e) { console.error(e); }
+
+          if (!data) {
+            // Fallback to localStorage cache
+            try {
+              const cached = localStorage.getItem(LOCAL_KEY);
+              if (cached) data = JSON.parse(cached);
+            } catch {}
+          }
+
+          if (data) {
+            setAppliedKeys(new Set(data.applied || []));
+            setSavedKeys(new Set(data.saved || []));
+            setSkippedKeys(data.skipped || {});
+            setRemovedKeys(new Set(data.removed || []));
             setLastFetch(data.lastFetch || null);
             setConfigUrl(data.configUrl || DEFAULT_FETCH_URL);
-          } else { setAllJobs(SAMPLE_JOBS); }
-        } catch { setAllJobs(SAMPLE_JOBS); }
-        setLoaded(true);
-      }, []);
+          }
+          setSyncStatus("ok");
+          setLoaded(true);
+        })();
+      }, [fbReady]);
 
-      // Save
-      const persist = useCallback((jobs, applied, saved, skipped, lf, url) => {
-        try {
-          storage.set(STORAGE_KEY, JSON.stringify({
-            jobs, applied: [...applied], saved: [...saved], skipped,
-            lastFetch: lf, configUrl: url, updated: new Date().toISOString(),
-          }));
-        } catch (e) { console.error("Save failed:", e); }
+      // Save to Firebase (debounced) + localStorage cache
+      const persistToFirebase = useCallback((applied, saved, skipped, removed, lf, url) => {
+        const data = {
+          applied: [...applied],
+          saved: [...saved],
+          skipped,
+          removed: [...removed],
+          lastFetch: lf,
+          configUrl: url,
+        };
+        // Immediate localStorage cache
+        try { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); } catch {}
+
+        // Debounced Firebase write
+        if (saveTimer.current) clearTimeout(saveTimer.current);
+        setSyncStatus("saving");
+        saveTimer.current = setTimeout(async () => {
+          const ok = await window._fb.saveState(data);
+          setSyncStatus(ok ? "ok" : "error");
+        }, 800);
       }, []);
 
       useEffect(() => {
-        if (loaded) persist(allJobs, appliedJobs, savedJobs, skippedJobs, lastFetch, configUrl);
-      }, [allJobs, appliedJobs, savedJobs, skippedJobs, lastFetch, configUrl, loaded]);
+        if (loaded && fbReady) persistToFirebase(appliedKeys, savedKeys, skippedKeys, removedKeys, lastFetch, configUrl);
+      }, [appliedKeys, savedKeys, skippedKeys, removedKeys, lastFetch, configUrl, loaded, fbReady]);
 
-      // Auto-fetch
+      // Auto-fetch job data
       const fetchRemote = useCallback(async () => {
         const url = configUrl;
         if (!url) { setFetchStatus("No data URL configured"); return; }
@@ -160,7 +248,7 @@
           const newJobs = data.jobs || data;
           if (Array.isArray(newJobs) && newJobs.length > 0) {
             setAllJobs(prev => {
-              const unique = dedup(prev, newJobs);
+              const unique = dedup(prev, newJobs).filter(j => !removedKeys.has(jobKey(j)));
               if (unique.length === 0) { setFetchStatus("Up to date (" + prev.length + " jobs)"); return prev; }
               setFetchStatus("Added " + unique.length + " new jobs!");
               return [...prev, ...unique];
@@ -172,17 +260,16 @@
 
       useEffect(() => {
         if (!loaded || !configUrl) return;
-        const hourAgo = Date.now() - 3600000;
-        if (!lastFetch || new Date(lastFetch).getTime() < hourAgo) fetchRemote();
+        fetchRemote();
       }, [loaded, configUrl]);
 
       // Filter + sort
       useEffect(() => {
         let f = [...allJobs];
-        if (tab === "saved") f = f.filter((_, i) => savedJobs.has(i));
-        else if (tab === "applied") f = f.filter((_, i) => appliedJobs.has(i));
-        else if (tab === "skipped") f = f.filter((_, i) => skippedJobs[i] !== undefined);
-        else if (tab === "all" && !showSkipped) f = f.filter((_, i) => skippedJobs[i] === undefined);
+        if (tab === "saved") f = f.filter(j => savedKeys.has(jobKey(j)));
+        else if (tab === "applied") f = f.filter(j => appliedKeys.has(jobKey(j)));
+        else if (tab === "skipped") f = f.filter(j => skippedKeys[jobKey(j)] !== undefined);
+        else if (tab === "all" && !showSkipped) f = f.filter(j => skippedKeys[jobKey(j)] === undefined);
 
         if (search) {
           const q = search.toLowerCase();
@@ -209,7 +296,7 @@
           return sortDir === "asc" ? (va < vb ? -1 : 1) : (va > vb ? -1 : 1);
         });
         setFiltered(f);
-      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedJobs, appliedJobs, skippedJobs, showSkipped]);
+      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedKeys, appliedKeys, skippedKeys, showSkipped]);
 
       const handleImport = async (e) => {
         const file = e.target.files?.[0];
@@ -224,35 +311,46 @@
         if (fileRef.current) fileRef.current.value = "";
       };
 
-      const getOrigIdx = (fi) => allJobs.indexOf(filtered[fi]);
-      const toggleApplied = (fi) => { const oi = getOrigIdx(fi); setAppliedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
-      const toggleSaved = (fi) => { const oi = getOrigIdx(fi); setSavedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
+      const toggleApplied = (job) => { const k = jobKey(job); setAppliedKeys(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; }); };
+      const toggleSaved = (job) => { const k = jobKey(job); setSavedKeys(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; }); };
+      const skipJob = (job, reason) => { setSkippedKeys(prev => ({ ...prev, [jobKey(job)]: reason })); setSkipMenuOpen(null); };
+      const unskipJob = (job) => { const k = jobKey(job); setSkippedKeys(prev => { const n = { ...prev }; delete n[k]; return n; }); };
 
-      const skipJob = (fi, reason) => {
-        const oi = getOrigIdx(fi);
-        setSkippedJobs(prev => ({ ...prev, [oi]: reason }));
-        setSkipMenuOpen(null);
-      };
-      const unskipJob = (fi) => {
-        const oi = getOrigIdx(fi);
-        setSkippedJobs(prev => { const n = { ...prev }; delete n[oi]; return n; });
-      };
-
-      const clearAll = () => {
-        if (confirm("Clear all job data? This cannot be undone.")) {
-          setAllJobs([]); setAppliedJobs(new Set()); setSavedJobs(new Set()); setSkippedJobs({});
-          storage.delete(STORAGE_KEY);
+      const removeJob = (job) => {
+        if (confirm("Remove \"" + (job["Job Title"]||"") + "\" at " + (job.Company||"") + "? This hides it permanently.")) {
+          const k = jobKey(job);
+          setAllJobs(prev => prev.filter(j => jobKey(j) !== k));
+          // Also clean up any saved/applied/skipped state for this job
+          setAppliedKeys(p => { const s = new Set(p); s.delete(k); return s; });
+          setSavedKeys(p => { const s = new Set(p); s.delete(k); return s; });
+          setSkippedKeys(prev => { const n = { ...prev }; delete n[k]; return n; });
+          // Track removed keys so they don't come back on next auto-fetch
+          setRemovedKeys(p => { const s = new Set(p); s.add(k); return s; });
         }
       };
 
-      const skippedCount = Object.keys(skippedJobs).length;
+      const clearAll = () => {
+        if (confirm("Clear all tracking data (saved/applied/skipped)? Job listings will remain.")) {
+          setAppliedKeys(new Set()); setSavedKeys(new Set()); setSkippedKeys({});
+        }
+      };
+
+      const clearAllJobs = () => {
+        if (confirm("Remove ALL job listings? Your saved/applied/skipped tracking will also be cleared. This cannot be undone.")) {
+          setAllJobs([]); setAppliedKeys(new Set()); setSavedKeys(new Set()); setSkippedKeys({}); setRemovedKeys(new Set());
+        }
+      };
+
+      const skippedCount = Object.keys(skippedKeys).length;
       const stats = {
         total: allJobs.length,
         today: allJobs.filter(j => j["Date Posted"] === new Date().toISOString().split("T")[0]).length,
-        saved: savedJobs.size,
-        applied: appliedJobs.size,
+        saved: savedKeys.size,
+        applied: appliedKeys.size,
         skipped: skippedCount,
       };
+
+      const syncLabel = { loading: "Syncing...", ok: "Synced", saving: "Saving...", error: "Offline" };
 
       if (!loaded) return (
         <div style={S.loadWrap}><div style={S.loadText}>Loading job board...</div></div>
@@ -273,7 +371,13 @@
                     </svg>
                     <div>
                       <h1 style={S.title}>Seattle SWE Jobs</h1>
-                      <p style={S.subtitle}>Mid-level (3–5 yrs) · Greater Seattle Area · Updated daily</p>
+                      <p style={S.subtitle}>
+                        Mid-level (3–5 yrs) · Greater Seattle Area ·&nbsp;
+                        <span className={"sync-dot " + (syncStatus === "ok" ? "ok" : syncStatus === "saving" ? "saving" : syncStatus === "error" ? "err" : "saving")}></span>
+                        <span style={{ fontSize: 11, color: syncStatus === "ok" ? "#34d399" : syncStatus === "error" ? "#ef4444" : "#fbbf24" }}>
+                          {syncLabel[syncStatus]}
+                        </span>
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -282,7 +386,8 @@
                   <button onClick={fetchRemote} style={{...S.btnGhost, color: "#34d399", borderColor: "rgba(52,211,153,0.2)"}}>Refresh</button>
                   <input type="file" ref={fileRef} accept=".csv,.json" onChange={handleImport} style={{ display: "none" }} />
                   <button onClick={() => fileRef.current?.click()} style={S.btnPrimary}>{importing ? "Importing..." : "Import CSV/JSON"}</button>
-                  <button onClick={clearAll} style={{...S.btnGhost, color: "#ef4444", borderColor: "rgba(239,68,68,0.15)"}}>Reset</button>
+                  <button onClick={clearAll} style={{...S.btnGhost, color: "#f97316", borderColor: "rgba(249,115,22,0.15)"}}>Reset Tracking</button>
+                  <button onClick={clearAllJobs} style={{...S.btnGhost, color: "#ef4444", borderColor: "rgba(239,68,68,0.15)"}}>Clear All</button>
                 </div>
               </div>
 
@@ -296,6 +401,11 @@
                   </div>
                   {fetchStatus && <p style={{ margin: "8px 0 0", fontSize: 12, color: fetchStatus.includes("error") || fetchStatus.includes("Error") ? "#ef4444" : "#34d399" }}>{fetchStatus}</p>}
                   {lastFetch && <p style={{ margin: "4px 0 0", fontSize: 11, color: "#52525b" }}>Last fetched: {new Date(lastFetch).toLocaleString()}</p>}
+                  <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(52,211,153,0.06)", borderRadius: 8, border: "1px solid rgba(52,211,153,0.12)" }}>
+                    <p style={{ fontSize: 12, color: "#34d399", margin: 0 }}>
+                      <strong>Cloud sync active</strong> — your saved, applied, and skipped data syncs across all your devices via Firebase.
+                    </p>
+                  </div>
                 </div>
               )}
 
@@ -319,7 +429,6 @@
 
           {/* BODY */}
           <div style={S.body}>
-            {/* Tabs */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
               <div style={S.tabs}>
                 {[
@@ -336,14 +445,12 @@
               </div>
               {tab === "all" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#52525b", cursor: "pointer", userSelect: "none" }}>
-                  <input type="checkbox" checked={showSkipped} onChange={e => setShowSkipped(e.target.checked)}
-                    style={{ accentColor: "#f97316" }} />
+                  <input type="checkbox" checked={showSkipped} onChange={e => setShowSkipped(e.target.checked)} style={{ accentColor: "#f97316" }} />
                   Show skipped
                 </label>
               )}
             </div>
 
-            {/* Filters */}
             <div style={S.filters}>
               <div style={{ position: "relative", flex: "1 1 280px" }}>
                 <span style={S.searchIcon}>&#8981;</span>
@@ -368,42 +475,35 @@
 
             <p style={S.resultCount}>{filtered.length} results</p>
 
-            {/* JOB CARDS */}
             <div style={S.cardList}>
               {filtered.length === 0 && (
                 <div style={S.emptyState}>
-                  <div style={{ fontSize: 44, marginBottom: 12, opacity: 0.6 }}>
-                    {tab === "skipped" ? "👍" : "📋"}
-                  </div>
+                  <div style={{ fontSize: 44, marginBottom: 12, opacity: 0.6 }}>{tab === "skipped" ? "\uD83D\uDC4D" : "\uD83D\uDCCB"}</div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: "#71717a" }}>
-                    {tab === "skipped" ? "No skipped jobs" : "No jobs to display"}
+                    {tab === "skipped" ? "No skipped jobs" : tab === "applied" ? "No applied jobs yet" : tab === "saved" ? "No saved jobs yet" : "No jobs to display"}
                   </div>
                   <div style={{ fontSize: 13, marginTop: 6, color: "#52525b" }}>
-                    {tab === "skipped" ? "Jobs you mark as 'not worth applying' will appear here." : "Import a CSV/JSON from the scraper, or configure auto-fetch in Settings."}
+                    {tab === "all" ? "Import a CSV/JSON from the scraper, or configure auto-fetch in Settings." : "Your " + tab + " jobs will appear here."}
                   </div>
                 </div>
               )}
 
               {filtered.map((job, idx) => {
-                const origIdx = getOrigIdx(idx);
-                const isApplied = appliedJobs.has(origIdx);
-                const isSaved = savedJobs.has(origIdx);
-                const skipReason = skippedJobs[origIdx];
+                const jk = jobKey(job);
+                const isApplied = appliedKeys.has(jk);
+                const isSaved = savedKeys.has(jk);
+                const skipReason = skippedKeys[jk];
                 const isSkipped = skipReason !== undefined;
                 const skipInfo = SKIP_REASONS.find(r => r.id === skipReason);
                 const src = (job.Source || "").toLowerCase();
                 const srcColor = SOURCE_COLORS[src] || "#71717a";
-                const expanded = expandedJob === origIdx;
-                const isSkipMenuOpen = skipMenuOpen === origIdx;
+                const expanded = expandedJob === jk;
+                const isSkipMenuOpen = skipMenuOpen === jk;
 
                 return (
-                  <div key={job["Job Title"] + "-" + job.Company + "-" + idx}
-                    style={{
-                      ...S.card,
-                      ...(isApplied ? S.cardApplied : {}),
-                      ...(isSkipped ? S.cardSkipped : {}),
-                    }}
-                    onMouseEnter={e => { if (!isSkipped) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+                  <div key={jk + "-" + idx}
+                    style={{...S.card, ...(isApplied ? S.cardApplied : {}), ...(isSkipped ? S.cardSkipped : {})}}
+                    onMouseEnter={e => { if (!isSkipped) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; }}}
                     onMouseLeave={e => { e.currentTarget.style.borderColor = isSkipped ? "rgba(249,115,22,0.1)" : isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "none"; }}
                   >
                     <div style={S.cardInner}>
@@ -412,15 +512,12 @@
                           <span style={{...S.srcBadge, background: srcColor + "15", color: srcColor, border: "1px solid " + srcColor + "30"}}>
                             {SOURCE_ICONS[src] || src.substring(0,2).toUpperCase()}
                           </span>
-                          <span style={{ ...S.cardTitle, ...(isSkipped ? { textDecoration: "line-through", textDecorationColor: "rgba(249,115,22,0.4)" } : {}) }}>{job["Job Title"]}</span>
+                          <span style={{...S.cardTitle, ...(isSkipped ? { textDecoration: "line-through", textDecorationColor: "rgba(249,115,22,0.4)" } : {})}}>{job["Job Title"]}</span>
                           {isApplied && <span style={S.appliedBadge}>Applied</span>}
                           {isSkipped && skipInfo && (
-                            <span style={{
-                              fontSize: 9, padding: "2px 8px", borderRadius: 5,
-                              background: skipInfo.color + "18", color: skipInfo.color,
-                              fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5,
-                              border: "1px solid " + skipInfo.color + "30",
-                            }}>{skipInfo.icon} {skipInfo.label}</span>
+                            <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 5, background: skipInfo.color + "18", color: skipInfo.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, border: "1px solid " + skipInfo.color + "30" }}>
+                              {skipInfo.icon} {skipInfo.label}
+                            </span>
                           )}
                         </div>
 
@@ -440,52 +537,38 @@
                         {job.Description && (
                           <div style={{ marginTop: 10 }}>
                             <p style={S.desc}>{expanded ? job.Description : (job.Description||"").substring(0, 140) + "..."}</p>
-                            <button onClick={() => setExpandedJob(expanded ? null : origIdx)} style={S.expandBtn}>
+                            <button onClick={() => setExpandedJob(expanded ? null : jk)} style={S.expandBtn}>
                               {expanded ? "Show less" : "Show more"}
                             </button>
                           </div>
                         )}
                       </div>
 
-                      {/* Actions */}
                       <div style={S.actions}>
-                        <button onClick={() => toggleSaved(idx)} title={isSaved ? "Unsave" : "Save"} style={{
-                          ...S.iconBtn,
-                          background: isSaved ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
-                          color: isSaved ? "#fbbf24" : "#52525b",
+                        <button onClick={() => toggleSaved(job)} title={isSaved ? "Unsave" : "Save"} style={{
+                          ...S.iconBtn, background: isSaved ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)", color: isSaved ? "#fbbf24" : "#52525b",
                         }}>{isSaved ? "\u2605" : "\u2606"}</button>
 
-                        <button onClick={() => toggleApplied(idx)} title="Mark applied" style={{
-                          ...S.iconBtn,
-                          background: isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)",
-                          color: isApplied ? "#a78bfa" : "#52525b",
+                        <button onClick={() => toggleApplied(job)} title="Mark applied" style={{
+                          ...S.iconBtn, background: isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)", color: isApplied ? "#a78bfa" : "#52525b",
                         }}>{isApplied ? "\u2714" : "\u2713"}</button>
 
-                        {/* Skip button with dropdown */}
                         <div style={{ position: "relative" }} ref={isSkipMenuOpen ? skipMenuRef : null}>
                           <button onClick={() => {
-                            if (isSkipped) { unskipJob(idx); }
-                            else { setSkipMenuOpen(isSkipMenuOpen ? null : origIdx); }
-                          }} title={isSkipped ? "Undo skip" : "Skip — not worth applying"} style={{
-                            ...S.iconBtn,
-                            background: isSkipped ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.03)",
-                            color: isSkipped ? "#f97316" : "#52525b",
-                            fontSize: 14,
+                            if (isSkipped) unskipJob(job);
+                            else setSkipMenuOpen(isSkipMenuOpen ? null : jk);
+                          }} title={isSkipped ? "Undo skip" : "Skip"} style={{
+                            ...S.iconBtn, background: isSkipped ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.03)", color: isSkipped ? "#f97316" : "#52525b", fontSize: 14,
                           }}>{isSkipped ? "\u21A9" : "\u2298"}</button>
 
                           {isSkipMenuOpen && (
                             <div style={S.skipMenu}>
-                              <div style={{ padding: "8px 12px", fontSize: 11, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                                Why skip?
-                              </div>
+                              <div style={{ padding: "8px 12px", fontSize: 11, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>Why skip?</div>
                               {SKIP_REASONS.map(r => (
-                                <button key={r.id} onClick={() => skipJob(idx, r.id)} style={S.skipMenuItem}
+                                <button key={r.id} onClick={() => skipJob(job, r.id)} style={S.skipMenuItem}
                                   onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
                                   onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-                                >
-                                  <span>{r.icon}</span>
-                                  <span>{r.label}</span>
-                                </button>
+                                ><span>{r.icon}</span><span>{r.label}</span></button>
                               ))}
                             </div>
                           )}
@@ -497,6 +580,13 @@
                             onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "0 2px 10px rgba(59,130,246,0.2)"; }}
                           >Apply &rarr;</a>
                         )}
+
+                        <button onClick={() => removeJob(job)} title="Remove listing" style={{
+                          ...S.iconBtn, color: "#52525b", fontSize: 13,
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.1)"; e.currentTarget.style.color = "#ef4444"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.color = "#52525b"; }}
+                        >&times;</button>
                       </div>
                     </div>
                   </div>
@@ -504,14 +594,13 @@
               })}
             </div>
 
-            {/* Footer */}
             <div style={S.footer}>
               <p style={{ margin: 0 }}>
                 Run <code style={S.codeInline}>python job_scraper.py --push</code> daily to auto-update
                 &nbsp;&bull;&nbsp; Or import CSV/JSON manually anytime
               </p>
               <p style={{ margin: "6px 0 0" }}>
-                &#9733; Save &nbsp;&middot;&nbsp; &#10003; Applied &nbsp;&middot;&nbsp; &#8856; Skip (visa, salary, location, stack, culture)
+                &#9733; Save &nbsp;&middot;&nbsp; &#10003; Applied &nbsp;&middot;&nbsp; &#8856; Skip &nbsp;&middot;&nbsp; Synced across devices via Firebase
               </p>
             </div>
           </div>
@@ -523,43 +612,33 @@
       root: { fontFamily: "'Space Grotesk', sans-serif", background: "#08080c", color: "#e4e4e7", minHeight: "100vh" },
       loadWrap: { display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#08080c" },
       loadText: { color: "#71717a", fontSize: 18 },
-
       header: { background: "linear-gradient(180deg, #0d0d14 0%, #08080c 100%)", borderBottom: "1px solid rgba(255,255,255,0.04)", padding: "24px 28px 20px" },
       headerInner: { maxWidth: 1100, margin: "0 auto" },
       headerTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 },
       title: { margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: "-0.3px", color: "#f4f4f5" },
       subtitle: { margin: "3px 0 0", color: "#52525b", fontSize: 13 },
-
       btnPrimary: { padding: "9px 18px", borderRadius: 8, border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.1)", color: "#60a5fa", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.2s" },
       btnGhost: { padding: "9px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500 },
-
       configPanel: { marginTop: 16, padding: 16, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" },
       configInput: { flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#e4e4e7", fontSize: 13, fontFamily: "'IBM Plex Mono', monospace", outline: "none", minWidth: 200, boxSizing: "border-box" },
-
       statsRow: { display: "flex", gap: 16, marginTop: 20, flexWrap: "wrap" },
       statCard: { background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "10px 18px", border: "1px solid rgba(255,255,255,0.04)", minWidth: 90 },
       statLabel: { fontSize: 10, color: "#52525b", marginTop: 2, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 },
-
       body: { maxWidth: 1100, margin: "0 auto", padding: "16px 28px 40px" },
-
       tabs: { display: "flex", gap: 2, background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: 3, width: "fit-content" },
       tab: { padding: "7px 16px", borderRadius: 6, border: "none", background: "transparent", color: "#71717a", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.15s" },
       tabActive: { background: "rgba(96,165,250,0.12)", color: "#60a5fa" },
-
       filters: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
       searchIcon: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#3f3f46", fontSize: 16 },
       searchInput: { width: "100%", padding: "10px 12px 10px 34px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)", color: "#e4e4e7", fontSize: 13, outline: "none", boxSizing: "border-box" },
       select: { padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)", color: "#e4e4e7", fontSize: 12, cursor: "pointer", outline: "none" },
       opt: { background: "#141418" },
-
       resultCount: { margin: "10px 0 4px", color: "#3f3f46", fontSize: 12, fontWeight: 500 },
-
       cardList: { display: "flex", flexDirection: "column", gap: 6 },
       card: { background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", padding: "16px 20px", transition: "all 0.2s ease", cursor: "default" },
       cardApplied: { background: "rgba(167,139,250,0.03)", borderColor: "rgba(167,139,250,0.12)" },
       cardSkipped: { background: "rgba(249,115,22,0.02)", borderColor: "rgba(249,115,22,0.1)" },
       cardInner: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" },
-
       srcBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.3 },
       cardTitle: { fontSize: 16, fontWeight: 600, color: "#f4f4f5" },
       appliedBadge: { fontSize: 9, padding: "2px 7px", borderRadius: 5, background: "rgba(167,139,250,0.12)", color: "#a78bfa", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 },
@@ -568,31 +647,17 @@
       dot: { color: "#3f3f46" },
       location: { color: "#71717a" },
       salary: { color: "#34d399", fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
-
       datePill: { fontSize: 11, color: "#71717a", padding: "2px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 5 },
       typePill: { fontSize: 11, color: "#71717a", padding: "2px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 5 },
       srcPill: { fontSize: 11, fontWeight: 500 },
-
       desc: { fontSize: 12, color: "#52525b", margin: 0, lineHeight: 1.6 },
       expandBtn: { background: "none", border: "none", color: "#60a5fa", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: "4px 0" },
-
       actions: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 },
       iconBtn: { width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" },
       applyBtn: { padding: "8px 18px", borderRadius: 8, textDecoration: "none", background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontSize: 13, fontWeight: 600, transition: "all 0.2s", boxShadow: "0 2px 10px rgba(59,130,246,0.2)", display: "inline-block" },
-
-      skipMenu: {
-        position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, minWidth: 200,
-        background: "#141418", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)",
-        boxShadow: "0 12px 40px rgba(0,0,0,0.5)", overflow: "hidden",
-      },
-      skipMenuItem: {
-        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px",
-        background: "transparent", border: "none", color: "#e4e4e7", fontSize: 13,
-        cursor: "pointer", textAlign: "left", transition: "background 0.1s",
-      },
-
+      skipMenu: { position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, minWidth: 200, background: "#141418", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", boxShadow: "0 12px 40px rgba(0,0,0,0.5)", overflow: "hidden" },
+      skipMenuItem: { display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px", background: "transparent", border: "none", color: "#e4e4e7", fontSize: 13, cursor: "pointer", textAlign: "left", transition: "background 0.1s" },
       emptyState: { textAlign: "center", padding: "50px 20px", color: "#52525b", background: "rgba(255,255,255,0.015)", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.06)" },
-
       footer: { marginTop: 40, padding: "20px 0", borderTop: "1px solid rgba(255,255,255,0.04)", textAlign: "center", color: "#3f3f46", fontSize: 12 },
       codeInline: { color: "#60a5fa", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, background: "rgba(96,165,250,0.08)", padding: "2px 6px", borderRadius: 4 },
     };
