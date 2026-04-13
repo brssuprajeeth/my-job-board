@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Seattle SWE Jobs — Mid-Level (3–5 yrs)</title>
+  <meta name="description" content="Daily mid-level software engineer job postings in Greater Seattle Area" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #08080c; color: #e4e4e7; font-family: 'Space Grotesk', sans-serif; -webkit-font-smoothing: antialiased; }
+    ::selection { background: rgba(96,165,250,0.3); }
+    input, select, button { font-family: inherit; }
+    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; } ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React 18 via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <!-- Babel for JSX in-browser (fine for a personal tool) -->
+  <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel" data-type="module">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    // ══════════════════════════════════════════════════════════
+    // CONFIG — CHANGE THIS AFTER DEPLOYING
+    // ══════════════════════════════════════════════════════════
+    // Option A: Relative path (if index.html and data/ are in the same repo)
+    const DEFAULT_FETCH_URL = "data/jobs_latest.json";
+    // Option B: Full URL (uncomment and use this if hosting separately)
+    // const DEFAULT_FETCH_URL = "https://yourusername.github.io/my-job-board/data/jobs_latest.json";
+
+    const STORAGE_KEY = "seattle-swe-job-board-v3";
+
+    // ── localStorage wrapper (replaces artifact's window.storage) ──
+    const storage = {
+      get(key) {
+        try { const v = localStorage.getItem(key); return v ? { value: v } : null; }
+        catch { return null; }
+      },
+      set(key, value) {
+        try { localStorage.setItem(key, value); return { key, value }; }
+        catch { return null; }
+      },
+      delete(key) {
+        try { localStorage.removeItem(key); return { key, deleted: true }; }
+        catch { return null; }
+      },
+    };
+
+    // ── Constants ──
+    const SOURCES = ["All", "indeed", "linkedin", "zip_recruiter", "glassdoor", "jobright"];
+    const SOURCE_LABELS = { indeed: "Indeed", linkedin: "LinkedIn", zip_recruiter: "ZipRecruiter", glassdoor: "Glassdoor", jobright: "JobRight" };
+    const SOURCE_COLORS = { indeed: "#2164f3", linkedin: "#0a66c2", zip_recruiter: "#00a028", glassdoor: "#0caa41", jobright: "#6c5ce7" };
+    const SOURCE_ICONS = { indeed: "IN", linkedin: "Li", zip_recruiter: "ZR", glassdoor: "GD", jobright: "JR" };
+
+    const SAMPLE_JOBS = [
+      { "Job Title": "Software Engineer II", Company: "Amazon", Location: "Seattle, WA", "Apply Link": "https://amazon.jobs", Source: "linkedin", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$138,000–$185,000 yearly", Description: "Design and build scalable distributed systems for AWS. 3+ years of experience with Java, Python, or Go. Work with cross-functional teams to deliver customer-facing features..." },
+      { "Job Title": "Full Stack Developer", Company: "Zillow Group", Location: "Seattle, WA", "Apply Link": "https://zillow.com/careers", Source: "indeed", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$130,000–$168,000 yearly", Description: "Build consumer-facing real estate tools using React and Node.js. 3-5 years experience in full stack development..." },
+      { "Job Title": "SDE II", Company: "Microsoft", Location: "Redmond, WA", "Apply Link": "https://careers.microsoft.com", Source: "linkedin", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$145,000–$198,000 yearly", Description: "Build cloud infrastructure features for Azure. 3-5 years of software development experience..." },
+      { "Job Title": "Software Engineer", Company: "Stripe", Location: "Seattle, WA", "Apply Link": "https://stripe.com/jobs", Source: "indeed", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$150,000–$195,000 yearly", Description: "Build payment infrastructure serving millions of businesses. 3+ years of professional engineering experience..." },
+      { "Job Title": "Backend Engineer", Company: "DoorDash", Location: "Seattle, WA", "Apply Link": "https://careers.doordash.com", Source: "glassdoor", "Date Posted": new Date().toISOString().split("T")[0], Type: "Full-time", Salary: "$140,000–$185,000 yearly", Description: "Scale the logistics platform handling millions of daily deliveries. 3+ years building backend services..." },
+    ];
+
+    // ── Helpers ──
+    function parseCSV(text) {
+      const lines = text.trim().split("\n");
+      if (lines.length < 2) return [];
+      const headers = lines[0].split(",").map(h => h.replace(/^"|"$/g, "").trim());
+      return lines.slice(1).map(line => {
+        const vals = []; let cur = "", inQ = false;
+        for (const ch of line) {
+          if (ch === '"') inQ = !inQ;
+          else if (ch === "," && !inQ) { vals.push(cur.trim()); cur = ""; }
+          else cur += ch;
+        }
+        vals.push(cur.trim());
+        const obj = {};
+        headers.forEach((h, i) => { obj[h] = (vals[i] || "").replace(/^"|"$/g, ""); });
+        return obj;
+      });
+    }
+
+    function dedup(existing, incoming) {
+      const keys = new Set(existing.map(j => `${(j["Job Title"]||"").toLowerCase()}|${(j.Company||"").toLowerCase()}`));
+      return incoming.filter(j => !keys.has(`${(j["Job Title"]||"").toLowerCase()}|${(j.Company||"").toLowerCase()}`));
+    }
+
+    function relativeDate(ds) {
+      if (!ds) return "";
+      const d = new Date(ds + "T00:00:00");
+      const now = new Date(); now.setHours(0,0,0,0);
+      const diff = Math.floor((now - d) / 86400000);
+      if (diff === 0) return "Today";
+      if (diff === 1) return "Yesterday";
+      if (diff < 7) return diff + "d ago";
+      return ds;
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // MAIN COMPONENT
+    // ══════════════════════════════════════════════════════════
+    function JobBoard() {
+      const [allJobs, setAllJobs] = useState([]);
+      const [filtered, setFiltered] = useState([]);
+      const [search, setSearch] = useState("");
+      const [sourceFilter, setSourceFilter] = useState("All");
+      const [dateFilter, setDateFilter] = useState("all");
+      const [sortBy, setSortBy] = useState("date");
+      const [sortDir, setSortDir] = useState("desc");
+      const [appliedJobs, setAppliedJobs] = useState(new Set());
+      const [savedJobs, setSavedJobs] = useState(new Set());
+      const [importing, setImporting] = useState(false);
+      const [tab, setTab] = useState("all");
+      const [lastFetch, setLastFetch] = useState(null);
+      const [fetchStatus, setFetchStatus] = useState("");
+      const [expandedJob, setExpandedJob] = useState(null);
+      const [loaded, setLoaded] = useState(false);
+      const [configUrl, setConfigUrl] = useState(DEFAULT_FETCH_URL);
+      const [showConfig, setShowConfig] = useState(false);
+      const fileRef = useRef(null);
+
+      // ── Load from localStorage ──
+      useEffect(() => {
+        try {
+          const result = storage.get(STORAGE_KEY);
+          if (result?.value) {
+            const data = JSON.parse(result.value);
+            setAllJobs(data.jobs || SAMPLE_JOBS);
+            setAppliedJobs(new Set(data.applied || []));
+            setSavedJobs(new Set(data.saved || []));
+            setLastFetch(data.lastFetch || null);
+            setConfigUrl(data.configUrl || DEFAULT_FETCH_URL);
+          } else {
+            setAllJobs(SAMPLE_JOBS);
+          }
+        } catch { setAllJobs(SAMPLE_JOBS); }
+        setLoaded(true);
+      }, []);
+
+      // ── Save to localStorage ──
+      const persist = useCallback((jobs, applied, saved, lf, url) => {
+        try {
+          storage.set(STORAGE_KEY, JSON.stringify({
+            jobs, applied: [...applied], saved: [...saved],
+            lastFetch: lf, configUrl: url,
+            updated: new Date().toISOString(),
+          }));
+        } catch (e) { console.error("Save failed:", e); }
+      }, []);
+
+      useEffect(() => {
+        if (loaded) persist(allJobs, appliedJobs, savedJobs, lastFetch, configUrl);
+      }, [allJobs, appliedJobs, savedJobs, lastFetch, configUrl, loaded]);
+
+      // ── Auto-fetch remote JSON ──
+      const fetchRemote = useCallback(async () => {
+        const url = configUrl;
+        if (!url) { setFetchStatus("No data URL configured"); return; }
+        setFetchStatus("Fetching...");
+        try {
+          const resp = await fetch(url, { cache: "no-store" });
+          if (!resp.ok) throw new Error("HTTP " + resp.status);
+          const data = await resp.json();
+          const newJobs = data.jobs || data;
+          if (Array.isArray(newJobs) && newJobs.length > 0) {
+            setAllJobs(prev => {
+              const unique = dedup(prev, newJobs);
+              if (unique.length === 0) { setFetchStatus("Up to date (" + prev.length + " jobs)"); return prev; }
+              setFetchStatus("Added " + unique.length + " new jobs!");
+              return [...prev, ...unique];
+            });
+          } else {
+            setFetchStatus("No new jobs found");
+          }
+          setLastFetch(new Date().toISOString());
+        } catch (err) {
+          setFetchStatus("Fetch error: " + err.message);
+        }
+      }, [configUrl]);
+
+      // Auto-fetch on load
+      useEffect(() => {
+        if (!loaded || !configUrl) return;
+        const hourAgo = Date.now() - 3600000;
+        if (!lastFetch || new Date(lastFetch).getTime() < hourAgo) fetchRemote();
+      }, [loaded, configUrl]);
+
+      // ── Filter + sort ──
+      useEffect(() => {
+        let f = [...allJobs];
+        if (tab === "saved") f = f.filter((_, i) => savedJobs.has(i));
+        if (tab === "applied") f = f.filter((_, i) => appliedJobs.has(i));
+        if (search) {
+          const q = search.toLowerCase();
+          f = f.filter(j =>
+            (j["Job Title"]||"").toLowerCase().includes(q) ||
+            (j.Company||"").toLowerCase().includes(q) ||
+            (j.Location||"").toLowerCase().includes(q) ||
+            (j.Description||"").toLowerCase().includes(q)
+          );
+        }
+        if (sourceFilter !== "All") f = f.filter(j => (j.Source||"").toLowerCase() === sourceFilter);
+        if (dateFilter === "today") {
+          const today = new Date().toISOString().split("T")[0];
+          f = f.filter(j => j["Date Posted"] === today);
+        } else if (dateFilter === "week") {
+          const week = new Date(Date.now() - 7*86400000).toISOString().split("T")[0];
+          f = f.filter(j => (j["Date Posted"]||"") >= week);
+        }
+        f.sort((a, b) => {
+          let va, vb;
+          if (sortBy === "date") { va = a["Date Posted"]||""; vb = b["Date Posted"]||""; }
+          else if (sortBy === "company") { va = (a.Company||"").toLowerCase(); vb = (b.Company||"").toLowerCase(); }
+          else { va = (a["Job Title"]||"").toLowerCase(); vb = (b["Job Title"]||"").toLowerCase(); }
+          return sortDir === "asc" ? (va < vb ? -1 : 1) : (va > vb ? -1 : 1);
+        });
+        setFiltered(f);
+      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedJobs, appliedJobs]);
+
+      // ── Import CSV/JSON ──
+      const handleImport = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        setImporting(true);
+        try {
+          const text = await file.text();
+          let jobs = file.name.endsWith(".json") ? (JSON.parse(text).jobs || JSON.parse(text)) : parseCSV(text);
+          if (jobs.length) setAllJobs(prev => [...prev, ...dedup(prev, jobs)]);
+        } catch (err) { console.error("Import error:", err); }
+        setImporting(false);
+        if (fileRef.current) fileRef.current.value = "";
+      };
+
+      const getOrigIdx = (fi) => allJobs.indexOf(filtered[fi]);
+      const toggleApplied = (fi) => { const oi = getOrigIdx(fi); setAppliedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
+      const toggleSaved = (fi) => { const oi = getOrigIdx(fi); setSavedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
+
+      const clearAll = () => {
+        if (confirm("Clear all job data? This cannot be undone.")) {
+          setAllJobs([]); setAppliedJobs(new Set()); setSavedJobs(new Set());
+          storage.delete(STORAGE_KEY);
+        }
+      };
+
+      const stats = {
+        total: allJobs.length,
+        today: allJobs.filter(j => j["Date Posted"] === new Date().toISOString().split("T")[0]).length,
+        saved: savedJobs.size,
+        applied: appliedJobs.size,
+      };
+
+      if (!loaded) return (
+        <div style={S.loadWrap}><div style={S.loadText}>Loading job board...</div></div>
+      );
+
+      return (
+        <div style={S.root}>
+          {/* ── HEADER ── */}
+          <div style={S.header}>
+            <div style={S.headerInner}>
+              <div style={S.headerTop}>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
+                      <rect width="28" height="28" rx="7" fill="url(#g1)"/>
+                      <path d="M8 10h12M8 14h8M8 18h10" stroke="#fff" strokeWidth="2" strokeLinecap="round"/>
+                      <defs><linearGradient id="g1" x1="0" y1="0" x2="28" y2="28"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#8b5cf6"/></linearGradient></defs>
+                    </svg>
+                    <div>
+                      <h1 style={S.title}>Seattle SWE Jobs</h1>
+                      <p style={S.subtitle}>Mid-level (3–5 yrs) · Greater Seattle Area · Updated daily</p>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <button onClick={() => setShowConfig(!showConfig)} style={{...S.btnGhost, color: "#71717a"}}>{showConfig ? "Close" : "Settings"}</button>
+                  <button onClick={fetchRemote} style={{...S.btnGhost, color: "#34d399", borderColor: "rgba(52,211,153,0.2)"}}>Refresh</button>
+                  <input type="file" ref={fileRef} accept=".csv,.json" onChange={handleImport} style={{ display: "none" }} />
+                  <button onClick={() => fileRef.current?.click()} style={S.btnPrimary}>{importing ? "Importing..." : "Import CSV/JSON"}</button>
+                  <button onClick={clearAll} style={{...S.btnGhost, color: "#ef4444", borderColor: "rgba(239,68,68,0.15)"}}>Reset</button>
+                </div>
+              </div>
+
+              {/* Config panel */}
+              {showConfig && (
+                <div style={S.configPanel}>
+                  <label style={{ fontSize: 12, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Auto-fetch data URL</label>
+                  <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
+                    <input value={configUrl} onChange={e => setConfigUrl(e.target.value)}
+                      placeholder="data/jobs_latest.json or full URL"
+                      style={S.configInput} />
+                    <button onClick={fetchRemote} style={{...S.btnPrimary, whiteSpace: "nowrap"}}>Test Fetch</button>
+                  </div>
+                  {fetchStatus && <p style={{ margin: "8px 0 0", fontSize: 12, color: fetchStatus.includes("error") || fetchStatus.includes("Error") ? "#ef4444" : "#34d399" }}>{fetchStatus}</p>}
+                  {lastFetch && <p style={{ margin: "4px 0 0", fontSize: 11, color: "#52525b" }}>Last fetched: {new Date(lastFetch).toLocaleString()}</p>}
+                </div>
+              )}
+
+              {/* Stats */}
+              <div style={S.statsRow}>
+                {[
+                  { label: "Total", value: stats.total, color: "#60a5fa" },
+                  { label: "Today", value: stats.today, color: "#34d399" },
+                  { label: "Saved", value: stats.saved, color: "#fbbf24" },
+                  { label: "Applied", value: stats.applied, color: "#a78bfa" },
+                ].map(s => (
+                  <div key={s.label} style={S.statCard}>
+                    <div style={{ fontSize: 26, fontWeight: 700, color: s.color, fontFamily: "'IBM Plex Mono', monospace" }}>{s.value}</div>
+                    <div style={S.statLabel}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── BODY ── */}
+          <div style={S.body}>
+            {/* Tabs */}
+            <div style={S.tabs}>
+              {[
+                { id: "all", label: "All Jobs (" + stats.total + ")" },
+                { id: "saved", label: "Saved (" + stats.saved + ")" },
+                { id: "applied", label: "Applied (" + stats.applied + ")" },
+              ].map(t => (
+                <button key={t.id} onClick={() => setTab(t.id)} style={{...S.tab, ...(tab === t.id ? S.tabActive : {})}}>{t.label}</button>
+              ))}
+            </div>
+
+            {/* Filters */}
+            <div style={S.filters}>
+              <div style={{ position: "relative", flex: "1 1 280px" }}>
+                <span style={S.searchIcon}>&#8981;</span>
+                <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Search title, company, keywords..." style={S.searchInput} />
+              </div>
+              <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} style={S.select}>
+                {SOURCES.map(s => <option key={s} value={s} style={S.opt}>{s === "All" ? "All Sources" : SOURCE_LABELS[s] || s}</option>)}
+              </select>
+              <select value={dateFilter} onChange={e => setDateFilter(e.target.value)} style={S.select}>
+                <option value="all" style={S.opt}>All Dates</option>
+                <option value="today" style={S.opt}>Today</option>
+                <option value="week" style={S.opt}>Past Week</option>
+              </select>
+              <select value={sortBy + "-" + sortDir} onChange={e => { const [b,d] = e.target.value.split("-"); setSortBy(b); setSortDir(d); }} style={S.select}>
+                <option value="date-desc" style={S.opt}>Newest</option>
+                <option value="date-asc" style={S.opt}>Oldest</option>
+                <option value="company-asc" style={S.opt}>Company A–Z</option>
+                <option value="title-asc" style={S.opt}>Title A–Z</option>
+              </select>
+            </div>
+
+            <p style={S.resultCount}>{filtered.length} results</p>
+
+            {/* ── JOB CARDS ── */}
+            <div style={S.cardList}>
+              {filtered.length === 0 && (
+                <div style={S.emptyState}>
+                  <div style={{ fontSize: 44, marginBottom: 12, opacity: 0.6 }}>&#128203;</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#71717a" }}>No jobs to display</div>
+                  <div style={{ fontSize: 13, marginTop: 6, color: "#52525b" }}>Import a CSV/JSON from the scraper, or configure auto-fetch in Settings.</div>
+                </div>
+              )}
+
+              {filtered.map((job, idx) => {
+                const origIdx = getOrigIdx(idx);
+                const isApplied = appliedJobs.has(origIdx);
+                const isSaved = savedJobs.has(origIdx);
+                const src = (job.Source || "").toLowerCase();
+                const srcColor = SOURCE_COLORS[src] || "#71717a";
+                const expanded = expandedJob === origIdx;
+
+                return (
+                  <div key={job["Job Title"] + "-" + job.Company + "-" + idx}
+                    style={{...S.card, ...(isApplied ? S.cardApplied : {})}}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "none"; }}
+                  >
+                    <div style={S.cardInner}>
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                          <span style={{...S.srcBadge, background: srcColor + "15", color: srcColor, border: "1px solid " + srcColor + "30"}}>
+                            {SOURCE_ICONS[src] || src.substring(0,2).toUpperCase()}
+                          </span>
+                          <span style={S.cardTitle}>{job["Job Title"]}</span>
+                          {isApplied && <span style={S.appliedBadge}>Applied</span>}
+                        </div>
+
+                        <div style={S.cardMeta}>
+                          <span style={S.company}>{job.Company}</span>
+                          <span style={S.dot}>&middot;</span>
+                          <span style={S.location}>{job.Location}</span>
+                          {job.Salary && <React.Fragment><span style={S.dot}>&middot;</span><span style={S.salary}>{job.Salary}</span></React.Fragment>}
+                        </div>
+
+                        <div style={{ display: "flex", gap: 8, alignItems: "center", marginTop: 8, flexWrap: "wrap" }}>
+                          {job["Date Posted"] && <span style={S.datePill}>{relativeDate(job["Date Posted"])}</span>}
+                          {job.Type && <span style={S.typePill}>{job.Type}</span>}
+                          <span style={{...S.srcPill, color: srcColor}}>{SOURCE_LABELS[src] || src}</span>
+                        </div>
+
+                        {job.Description && (
+                          <div style={{ marginTop: 10 }}>
+                            <p style={S.desc}>{expanded ? job.Description : (job.Description||"").substring(0, 140) + "..."}</p>
+                            <button onClick={() => setExpandedJob(expanded ? null : origIdx)} style={S.expandBtn}>
+                              {expanded ? "Show less" : "Show more"}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={S.actions}>
+                        <button onClick={() => toggleSaved(idx)} title={isSaved ? "Unsave" : "Save"} style={{
+                          ...S.iconBtn,
+                          background: isSaved ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)",
+                          color: isSaved ? "#fbbf24" : "#52525b",
+                        }}>{isSaved ? "\u2605" : "\u2606"}</button>
+
+                        <button onClick={() => toggleApplied(idx)} title="Mark applied" style={{
+                          ...S.iconBtn,
+                          background: isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)",
+                          color: isApplied ? "#a78bfa" : "#52525b",
+                        }}>{isApplied ? "\u2714" : "\u2713"}</button>
+
+                        <a href={job["Apply Link"]} target="_blank" rel="noopener noreferrer" style={S.applyBtn}
+                          onMouseEnter={e => { e.target.style.transform = "translateY(-1px)"; e.target.style.boxShadow = "0 6px 20px rgba(59,130,246,0.35)"; }}
+                          onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "0 2px 10px rgba(59,130,246,0.2)"; }}
+                        >Apply &rarr;</a>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Footer */}
+            <div style={S.footer}>
+              <p style={{ margin: 0 }}>
+                Run <code style={S.codeInline}>python job_scraper.py --push</code> daily to auto-update
+                &nbsp;&bull;&nbsp; Or import CSV/JSON manually anytime
+              </p>
+              <p style={{ margin: "6px 0 0" }}>Data persists in your browser &middot; Star to save &middot; Check to track applications</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ══════════════════════════════════════════════════════════
+    // STYLES
+    // ══════════════════════════════════════════════════════════
+    const S = {
+      root: { fontFamily: "'Space Grotesk', sans-serif", background: "#08080c", color: "#e4e4e7", minHeight: "100vh" },
+      loadWrap: { display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#08080c" },
+      loadText: { color: "#71717a", fontSize: 18 },
+
+      header: { background: "linear-gradient(180deg, #0d0d14 0%, #08080c 100%)", borderBottom: "1px solid rgba(255,255,255,0.04)", padding: "24px 28px 20px" },
+      headerInner: { maxWidth: 1100, margin: "0 auto" },
+      headerTop: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 16 },
+      title: { margin: 0, fontSize: 22, fontWeight: 700, letterSpacing: "-0.3px", color: "#f4f4f5" },
+      subtitle: { margin: "3px 0 0", color: "#52525b", fontSize: 13 },
+
+      btnPrimary: { padding: "9px 18px", borderRadius: 8, border: "1px solid rgba(96,165,250,0.3)", background: "rgba(96,165,250,0.1)", color: "#60a5fa", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.2s" },
+      btnGhost: { padding: "9px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", background: "transparent", cursor: "pointer", fontSize: 13, fontWeight: 500 },
+
+      configPanel: { marginTop: 16, padding: 16, background: "rgba(255,255,255,0.02)", borderRadius: 10, border: "1px solid rgba(255,255,255,0.05)" },
+      configInput: { flex: 1, padding: "10px 14px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.04)", color: "#e4e4e7", fontSize: 13, fontFamily: "'IBM Plex Mono', monospace", outline: "none", minWidth: 200, boxSizing: "border-box" },
+
+      statsRow: { display: "flex", gap: 16, marginTop: 20, flexWrap: "wrap" },
+      statCard: { background: "rgba(255,255,255,0.025)", borderRadius: 10, padding: "10px 18px", border: "1px solid rgba(255,255,255,0.04)", minWidth: 90 },
+      statLabel: { fontSize: 10, color: "#52525b", marginTop: 2, textTransform: "uppercase", letterSpacing: 1, fontWeight: 600 },
+
+      body: { maxWidth: 1100, margin: "0 auto", padding: "16px 28px 40px" },
+
+      tabs: { display: "flex", gap: 2, background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: 3, width: "fit-content", marginBottom: 14 },
+      tab: { padding: "7px 16px", borderRadius: 6, border: "none", background: "transparent", color: "#71717a", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.15s" },
+      tabActive: { background: "rgba(96,165,250,0.12)", color: "#60a5fa" },
+
+      filters: { display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" },
+      searchIcon: { position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#3f3f46", fontSize: 16 },
+      searchInput: { width: "100%", padding: "10px 12px 10px 34px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)", color: "#e4e4e7", fontSize: 13, outline: "none", boxSizing: "border-box" },
+      select: { padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.03)", color: "#e4e4e7", fontSize: 12, cursor: "pointer", outline: "none" },
+      opt: { background: "#141418" },
+
+      resultCount: { margin: "10px 0 4px", color: "#3f3f46", fontSize: 12, fontWeight: 500 },
+
+      cardList: { display: "flex", flexDirection: "column", gap: 6 },
+      card: { background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", padding: "16px 20px", transition: "all 0.2s ease", cursor: "default" },
+      cardApplied: { background: "rgba(167,139,250,0.03)", borderColor: "rgba(167,139,250,0.12)" },
+      cardInner: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" },
+
+      srcBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.3 },
+      cardTitle: { fontSize: 16, fontWeight: 600, color: "#f4f4f5" },
+      appliedBadge: { fontSize: 9, padding: "2px 7px", borderRadius: 5, background: "rgba(167,139,250,0.12)", color: "#a78bfa", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 },
+      cardMeta: { display: "flex", alignItems: "center", gap: 8, marginTop: 5, flexWrap: "wrap", fontSize: 13 },
+      company: { color: "#a1a1aa", fontWeight: 500 },
+      dot: { color: "#3f3f46" },
+      location: { color: "#71717a" },
+      salary: { color: "#34d399", fontWeight: 600, fontFamily: "'IBM Plex Mono', monospace", fontSize: 12 },
+
+      datePill: { fontSize: 11, color: "#71717a", padding: "2px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 5 },
+      typePill: { fontSize: 11, color: "#71717a", padding: "2px 8px", background: "rgba(255,255,255,0.03)", borderRadius: 5 },
+      srcPill: { fontSize: 11, fontWeight: 500 },
+
+      desc: { fontSize: 12, color: "#52525b", margin: 0, lineHeight: 1.6 },
+      expandBtn: { background: "none", border: "none", color: "#60a5fa", fontSize: 11, fontWeight: 600, cursor: "pointer", padding: "4px 0" },
+
+      actions: { display: "flex", gap: 6, alignItems: "center", flexShrink: 0 },
+      iconBtn: { width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" },
+      applyBtn: { padding: "8px 18px", borderRadius: 8, textDecoration: "none", background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontSize: 13, fontWeight: 600, transition: "all 0.2s", boxShadow: "0 2px 10px rgba(59,130,246,0.2)", display: "inline-block" },
+
+      emptyState: { textAlign: "center", padding: "50px 20px", color: "#52525b", background: "rgba(255,255,255,0.015)", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.06)" },
+
+      footer: { marginTop: 40, padding: "20px 0", borderTop: "1px solid rgba(255,255,255,0.04)", textAlign: "center", color: "#3f3f46", fontSize: 12 },
+      codeInline: { color: "#60a5fa", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, background: "rgba(96,165,250,0.08)", padding: "2px 6px", borderRadius: 4 },
+    };
+
+    // ── Mount ──
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<JobBoard />);
+  </script>
+</body>
+</html>
