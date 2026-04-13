@@ -237,6 +237,7 @@ def export_csv(df, name):
 
 def export_json(df, name):
     path = f"{name}.json"
+    df = df.fillna("")
     records = df.to_dict(orient="records")
     payload = {
         "scraped_at": datetime.now().isoformat(),

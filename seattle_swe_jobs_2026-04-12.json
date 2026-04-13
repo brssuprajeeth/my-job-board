@@ -1,6 +1,6 @@
 {
-  "scraped_at": "2026-04-13T00:11:39.585535",
-  "date": "2026-04-13",
+  "scraped_at": "2026-04-12T23:22:14.757803",
+  "date": "2026-04-12",
   "total_jobs": 16,
   "experience_range": "3-5 years",
   "location": "Seattle, WA",
@@ -11,9 +11,9 @@
       "Location": "Bellevue, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4214697219",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -22,9 +22,9 @@
       "Location": "Redmond, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4387937971",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -33,9 +33,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4378206696",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -44,9 +44,9 @@
       "Location": "Redmond, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4369947372",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -55,9 +55,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4388733572",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -66,9 +66,9 @@
       "Location": "Redmond, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4369998863",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -77,9 +77,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4353181052",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -88,9 +88,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4322330173",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -99,9 +99,9 @@
       "Location": "",
       "Apply Link": "https://www.linkedin.com/jobs/view/4399108300",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -110,9 +110,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4342292447",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -121,9 +121,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4322510159",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -132,9 +132,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4322199946",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -143,20 +143,9 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4363545376",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer, E-Commerce AI Platform - USDS",
-      "Company": "TikTok USDS Joint Venture",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4401023520",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -165,9 +154,9 @@
       "Location": "",
       "Apply Link": "https://www.linkedin.com/jobs/view/4360546479",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     },
     {
@@ -176,9 +165,20 @@
       "Location": "Seattle, WA",
       "Apply Link": "https://www.linkedin.com/jobs/view/4388606229",
       "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
+      "Salary": ""
+    },
+    {
+      "Job Title": "Software Engineer, E-Commerce AI Platform - USDS",
+      "Company": "TikTok USDS Joint Venture",
+      "Location": "Seattle, WA",
+      "Apply Link": "https://www.linkedin.com/jobs/view/4401023520",
+      "Source": "linkedin",
+      "Date Posted": NaN,
+      "Type": NaN,
+      "Description": NaN,
       "Salary": ""
     }
   ]
