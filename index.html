@@ -18,50 +18,38 @@
 <body>
   <div id="root"></div>
 
-  <!-- React 18 via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <!-- Babel for JSX in-browser (fine for a personal tool) -->
   <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <script type="text/babel" data-type="module">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    // ══════════════════════════════════════════════════════════
-    // CONFIG — CHANGE THIS AFTER DEPLOYING
-    // ══════════════════════════════════════════════════════════
-    // Option A: Relative path (if index.html and data/ are in the same repo)
     const DEFAULT_FETCH_URL = "data/jobs_latest.json";
-    // Option B: Full URL (uncomment and use this if hosting separately)
-    // const DEFAULT_FETCH_URL = "https://yourusername.github.io/my-job-board/data/jobs_latest.json";
+    const STORAGE_KEY = "seattle-swe-job-board-v4";
 
-    const STORAGE_KEY = "seattle-swe-job-board-v3";
-
-    // ── localStorage wrapper (replaces artifact's window.storage) ──
     const storage = {
-      get(key) {
-        try { const v = localStorage.getItem(key); return v ? { value: v } : null; }
-        catch { return null; }
-      },
-      set(key, value) {
-        try { localStorage.setItem(key, value); return { key, value }; }
-        catch { return null; }
-      },
-      delete(key) {
-        try { localStorage.removeItem(key); return { key, deleted: true }; }
-        catch { return null; }
-      },
+      get(key) { try { const v = localStorage.getItem(key); return v ? { value: v } : null; } catch { return null; } },
+      set(key, value) { try { localStorage.setItem(key, value); return { key, value }; } catch { return null; } },
+      delete(key) { try { localStorage.removeItem(key); return { key, deleted: true }; } catch { return null; } },
     };
 
-    // ── Constants ──
     const SOURCES = ["All", "indeed", "linkedin", "zip_recruiter", "glassdoor", "jobright"];
     const SOURCE_LABELS = { indeed: "Indeed", linkedin: "LinkedIn", zip_recruiter: "ZipRecruiter", glassdoor: "Glassdoor", jobright: "JobRight" };
     const SOURCE_COLORS = { indeed: "#2164f3", linkedin: "#0a66c2", zip_recruiter: "#00a028", glassdoor: "#0caa41", jobright: "#6c5ce7" };
     const SOURCE_ICONS = { indeed: "IN", linkedin: "Li", zip_recruiter: "ZR", glassdoor: "GD", jobright: "JR" };
 
+    const SKIP_REASONS = [
+      { id: "visa", label: "Visa/Sponsorship", icon: "🛂", color: "#f97316" },
+      { id: "salary", label: "Low Salary", icon: "💰", color: "#eab308" },
+      { id: "location", label: "Bad Location", icon: "📍", color: "#ef4444" },
+      { id: "stack", label: "Wrong Tech Stack", icon: "🔧", color: "#8b5cf6" },
+      { id: "company", label: "Company Culture", icon: "🏢", color: "#ec4899" },
+      { id: "other", label: "Other", icon: "⊘", color: "#71717a" },
+    ];
+
     const SAMPLE_JOBS = [];
 
-    // ── Helpers ──
     function parseCSV(text) {
       const lines = text.trim().split("\n");
       if (lines.length < 2) return [];
@@ -96,9 +84,6 @@
       return ds;
     }
 
-    // ══════════════════════════════════════════════════════════
-    // MAIN COMPONENT
-    // ══════════════════════════════════════════════════════════
     function JobBoard() {
       const [allJobs, setAllJobs] = useState([]);
       const [filtered, setFiltered] = useState([]);
@@ -109,17 +94,30 @@
       const [sortDir, setSortDir] = useState("desc");
       const [appliedJobs, setAppliedJobs] = useState(new Set());
       const [savedJobs, setSavedJobs] = useState(new Set());
+      const [skippedJobs, setSkippedJobs] = useState({});       // { origIdx: "visa" | "salary" | ... }
       const [importing, setImporting] = useState(false);
       const [tab, setTab] = useState("all");
+      const [showSkipped, setShowSkipped] = useState(false);     // toggle skipped in All tab
       const [lastFetch, setLastFetch] = useState(null);
       const [fetchStatus, setFetchStatus] = useState("");
       const [expandedJob, setExpandedJob] = useState(null);
+      const [skipMenuOpen, setSkipMenuOpen] = useState(null);    // origIdx of open skip menu
       const [loaded, setLoaded] = useState(false);
       const [configUrl, setConfigUrl] = useState(DEFAULT_FETCH_URL);
       const [showConfig, setShowConfig] = useState(false);
       const fileRef = useRef(null);
+      const skipMenuRef = useRef(null);
 
-      // ── Load from localStorage ──
+      // Close skip menu on outside click
+      useEffect(() => {
+        const handler = (e) => {
+          if (skipMenuRef.current && !skipMenuRef.current.contains(e.target)) setSkipMenuOpen(null);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+      }, []);
+
+      // Load
       useEffect(() => {
         try {
           const result = storage.get(STORAGE_KEY);
@@ -128,31 +126,29 @@
             setAllJobs(data.jobs || SAMPLE_JOBS);
             setAppliedJobs(new Set(data.applied || []));
             setSavedJobs(new Set(data.saved || []));
+            setSkippedJobs(data.skipped || {});
             setLastFetch(data.lastFetch || null);
             setConfigUrl(data.configUrl || DEFAULT_FETCH_URL);
-          } else {
-            setAllJobs(SAMPLE_JOBS);
-          }
+          } else { setAllJobs(SAMPLE_JOBS); }
         } catch { setAllJobs(SAMPLE_JOBS); }
         setLoaded(true);
       }, []);
 
-      // ── Save to localStorage ──
-      const persist = useCallback((jobs, applied, saved, lf, url) => {
+      // Save
+      const persist = useCallback((jobs, applied, saved, skipped, lf, url) => {
         try {
           storage.set(STORAGE_KEY, JSON.stringify({
-            jobs, applied: [...applied], saved: [...saved],
-            lastFetch: lf, configUrl: url,
-            updated: new Date().toISOString(),
+            jobs, applied: [...applied], saved: [...saved], skipped,
+            lastFetch: lf, configUrl: url, updated: new Date().toISOString(),
           }));
         } catch (e) { console.error("Save failed:", e); }
       }, []);
 
       useEffect(() => {
-        if (loaded) persist(allJobs, appliedJobs, savedJobs, lastFetch, configUrl);
-      }, [allJobs, appliedJobs, savedJobs, lastFetch, configUrl, loaded]);
+        if (loaded) persist(allJobs, appliedJobs, savedJobs, skippedJobs, lastFetch, configUrl);
+      }, [allJobs, appliedJobs, savedJobs, skippedJobs, lastFetch, configUrl, loaded]);
 
-      // ── Auto-fetch remote JSON ──
+      // Auto-fetch
       const fetchRemote = useCallback(async () => {
         const url = configUrl;
         if (!url) { setFetchStatus("No data URL configured"); return; }
@@ -169,27 +165,25 @@
               setFetchStatus("Added " + unique.length + " new jobs!");
               return [...prev, ...unique];
             });
-          } else {
-            setFetchStatus("No new jobs found");
-          }
+          } else { setFetchStatus("No new jobs found"); }
           setLastFetch(new Date().toISOString());
-        } catch (err) {
-          setFetchStatus("Fetch error: " + err.message);
-        }
+        } catch (err) { setFetchStatus("Fetch error: " + err.message); }
       }, [configUrl]);
 
-      // Auto-fetch on load
       useEffect(() => {
         if (!loaded || !configUrl) return;
         const hourAgo = Date.now() - 3600000;
         if (!lastFetch || new Date(lastFetch).getTime() < hourAgo) fetchRemote();
       }, [loaded, configUrl]);
 
-      // ── Filter + sort ──
+      // Filter + sort
       useEffect(() => {
         let f = [...allJobs];
         if (tab === "saved") f = f.filter((_, i) => savedJobs.has(i));
-        if (tab === "applied") f = f.filter((_, i) => appliedJobs.has(i));
+        else if (tab === "applied") f = f.filter((_, i) => appliedJobs.has(i));
+        else if (tab === "skipped") f = f.filter((_, i) => skippedJobs[i] !== undefined);
+        else if (tab === "all" && !showSkipped) f = f.filter((_, i) => skippedJobs[i] === undefined);
+
         if (search) {
           const q = search.toLowerCase();
           f = f.filter(j =>
@@ -215,9 +209,8 @@
           return sortDir === "asc" ? (va < vb ? -1 : 1) : (va > vb ? -1 : 1);
         });
         setFiltered(f);
-      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedJobs, appliedJobs]);
+      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedJobs, appliedJobs, skippedJobs, showSkipped]);
 
-      // ── Import CSV/JSON ──
       const handleImport = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -235,18 +228,30 @@
       const toggleApplied = (fi) => { const oi = getOrigIdx(fi); setAppliedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
       const toggleSaved = (fi) => { const oi = getOrigIdx(fi); setSavedJobs(p => { const s = new Set(p); s.has(oi) ? s.delete(oi) : s.add(oi); return s; }); };
 
+      const skipJob = (fi, reason) => {
+        const oi = getOrigIdx(fi);
+        setSkippedJobs(prev => ({ ...prev, [oi]: reason }));
+        setSkipMenuOpen(null);
+      };
+      const unskipJob = (fi) => {
+        const oi = getOrigIdx(fi);
+        setSkippedJobs(prev => { const n = { ...prev }; delete n[oi]; return n; });
+      };
+
       const clearAll = () => {
         if (confirm("Clear all job data? This cannot be undone.")) {
-          setAllJobs([]); setAppliedJobs(new Set()); setSavedJobs(new Set());
+          setAllJobs([]); setAppliedJobs(new Set()); setSavedJobs(new Set()); setSkippedJobs({});
           storage.delete(STORAGE_KEY);
         }
       };
 
+      const skippedCount = Object.keys(skippedJobs).length;
       const stats = {
         total: allJobs.length,
         today: allJobs.filter(j => j["Date Posted"] === new Date().toISOString().split("T")[0]).length,
         saved: savedJobs.size,
         applied: appliedJobs.size,
+        skipped: skippedCount,
       };
 
       if (!loaded) return (
@@ -255,7 +260,7 @@
 
       return (
         <div style={S.root}>
-          {/* ── HEADER ── */}
+          {/* HEADER */}
           <div style={S.header}>
             <div style={S.headerInner}>
               <div style={S.headerTop}>
@@ -281,14 +286,12 @@
                 </div>
               </div>
 
-              {/* Config panel */}
               {showConfig && (
                 <div style={S.configPanel}>
                   <label style={{ fontSize: 12, color: "#a1a1aa", fontWeight: 600, textTransform: "uppercase", letterSpacing: 1 }}>Auto-fetch data URL</label>
                   <div style={{ display: "flex", gap: 8, marginTop: 6 }}>
                     <input value={configUrl} onChange={e => setConfigUrl(e.target.value)}
-                      placeholder="data/jobs_latest.json or full URL"
-                      style={S.configInput} />
+                      placeholder="data/jobs_latest.json or full URL" style={S.configInput} />
                     <button onClick={fetchRemote} style={{...S.btnPrimary, whiteSpace: "nowrap"}}>Test Fetch</button>
                   </div>
                   {fetchStatus && <p style={{ margin: "8px 0 0", fontSize: 12, color: fetchStatus.includes("error") || fetchStatus.includes("Error") ? "#ef4444" : "#34d399" }}>{fetchStatus}</p>}
@@ -303,6 +306,7 @@
                   { label: "Today", value: stats.today, color: "#34d399" },
                   { label: "Saved", value: stats.saved, color: "#fbbf24" },
                   { label: "Applied", value: stats.applied, color: "#a78bfa" },
+                  { label: "Skipped", value: stats.skipped, color: "#f97316" },
                 ].map(s => (
                   <div key={s.label} style={S.statCard}>
                     <div style={{ fontSize: 26, fontWeight: 700, color: s.color, fontFamily: "'IBM Plex Mono', monospace" }}>{s.value}</div>
@@ -313,17 +317,30 @@
             </div>
           </div>
 
-          {/* ── BODY ── */}
+          {/* BODY */}
           <div style={S.body}>
             {/* Tabs */}
-            <div style={S.tabs}>
-              {[
-                { id: "all", label: "All Jobs (" + stats.total + ")" },
-                { id: "saved", label: "Saved (" + stats.saved + ")" },
-                { id: "applied", label: "Applied (" + stats.applied + ")" },
-              ].map(t => (
-                <button key={t.id} onClick={() => setTab(t.id)} style={{...S.tab, ...(tab === t.id ? S.tabActive : {})}}>{t.label}</button>
-              ))}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14, flexWrap: "wrap" }}>
+              <div style={S.tabs}>
+                {[
+                  { id: "all", label: "All Jobs (" + (stats.total - (showSkipped ? 0 : skippedCount)) + ")" },
+                  { id: "saved", label: "Saved (" + stats.saved + ")" },
+                  { id: "applied", label: "Applied (" + stats.applied + ")" },
+                  { id: "skipped", label: "Skipped (" + stats.skipped + ")" },
+                ].map(t => (
+                  <button key={t.id} onClick={() => setTab(t.id)} style={{
+                    ...S.tab, ...(tab === t.id ? S.tabActive : {}),
+                    ...(t.id === "skipped" && tab === t.id ? { background: "rgba(249,115,22,0.12)", color: "#f97316" } : {}),
+                  }}>{t.label}</button>
+                ))}
+              </div>
+              {tab === "all" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#52525b", cursor: "pointer", userSelect: "none" }}>
+                  <input type="checkbox" checked={showSkipped} onChange={e => setShowSkipped(e.target.checked)}
+                    style={{ accentColor: "#f97316" }} />
+                  Show skipped
+                </label>
+              )}
             </div>
 
             {/* Filters */}
@@ -351,13 +368,19 @@
 
             <p style={S.resultCount}>{filtered.length} results</p>
 
-            {/* ── JOB CARDS ── */}
+            {/* JOB CARDS */}
             <div style={S.cardList}>
               {filtered.length === 0 && (
                 <div style={S.emptyState}>
-                  <div style={{ fontSize: 44, marginBottom: 12, opacity: 0.6 }}>&#128203;</div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: "#71717a" }}>No jobs to display</div>
-                  <div style={{ fontSize: 13, marginTop: 6, color: "#52525b" }}>Import a CSV/JSON from the scraper, or configure auto-fetch in Settings.</div>
+                  <div style={{ fontSize: 44, marginBottom: 12, opacity: 0.6 }}>
+                    {tab === "skipped" ? "👍" : "📋"}
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#71717a" }}>
+                    {tab === "skipped" ? "No skipped jobs" : "No jobs to display"}
+                  </div>
+                  <div style={{ fontSize: 13, marginTop: 6, color: "#52525b" }}>
+                    {tab === "skipped" ? "Jobs you mark as 'not worth applying' will appear here." : "Import a CSV/JSON from the scraper, or configure auto-fetch in Settings."}
+                  </div>
                 </div>
               )}
 
@@ -365,24 +388,40 @@
                 const origIdx = getOrigIdx(idx);
                 const isApplied = appliedJobs.has(origIdx);
                 const isSaved = savedJobs.has(origIdx);
+                const skipReason = skippedJobs[origIdx];
+                const isSkipped = skipReason !== undefined;
+                const skipInfo = SKIP_REASONS.find(r => r.id === skipReason);
                 const src = (job.Source || "").toLowerCase();
                 const srcColor = SOURCE_COLORS[src] || "#71717a";
                 const expanded = expandedJob === origIdx;
+                const isSkipMenuOpen = skipMenuOpen === origIdx;
 
                 return (
                   <div key={job["Job Title"] + "-" + job.Company + "-" + idx}
-                    style={{...S.card, ...(isApplied ? S.cardApplied : {})}}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "none"; }}
+                    style={{
+                      ...S.card,
+                      ...(isApplied ? S.cardApplied : {}),
+                      ...(isSkipped ? S.cardSkipped : {}),
+                    }}
+                    onMouseEnter={e => { if (!isSkipped) { e.currentTarget.style.borderColor = "rgba(255,255,255,0.12)"; e.currentTarget.style.transform = "translateY(-1px)"; } }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = isSkipped ? "rgba(249,115,22,0.1)" : isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.05)"; e.currentTarget.style.transform = "none"; }}
                   >
                     <div style={S.cardInner}>
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ flex: 1, minWidth: 200, opacity: isSkipped ? 0.5 : 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                           <span style={{...S.srcBadge, background: srcColor + "15", color: srcColor, border: "1px solid " + srcColor + "30"}}>
                             {SOURCE_ICONS[src] || src.substring(0,2).toUpperCase()}
                           </span>
-                          <span style={S.cardTitle}>{job["Job Title"]}</span>
+                          <span style={{ ...S.cardTitle, ...(isSkipped ? { textDecoration: "line-through", textDecorationColor: "rgba(249,115,22,0.4)" } : {}) }}>{job["Job Title"]}</span>
                           {isApplied && <span style={S.appliedBadge}>Applied</span>}
+                          {isSkipped && skipInfo && (
+                            <span style={{
+                              fontSize: 9, padding: "2px 8px", borderRadius: 5,
+                              background: skipInfo.color + "18", color: skipInfo.color,
+                              fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5,
+                              border: "1px solid " + skipInfo.color + "30",
+                            }}>{skipInfo.icon} {skipInfo.label}</span>
+                          )}
                         </div>
 
                         <div style={S.cardMeta}>
@@ -408,6 +447,7 @@
                         )}
                       </div>
 
+                      {/* Actions */}
                       <div style={S.actions}>
                         <button onClick={() => toggleSaved(idx)} title={isSaved ? "Unsave" : "Save"} style={{
                           ...S.iconBtn,
@@ -421,10 +461,42 @@
                           color: isApplied ? "#a78bfa" : "#52525b",
                         }}>{isApplied ? "\u2714" : "\u2713"}</button>
 
-                        <a href={job["Apply Link"]} target="_blank" rel="noopener noreferrer" style={S.applyBtn}
-                          onMouseEnter={e => { e.target.style.transform = "translateY(-1px)"; e.target.style.boxShadow = "0 6px 20px rgba(59,130,246,0.35)"; }}
-                          onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "0 2px 10px rgba(59,130,246,0.2)"; }}
-                        >Apply &rarr;</a>
+                        {/* Skip button with dropdown */}
+                        <div style={{ position: "relative" }} ref={isSkipMenuOpen ? skipMenuRef : null}>
+                          <button onClick={() => {
+                            if (isSkipped) { unskipJob(idx); }
+                            else { setSkipMenuOpen(isSkipMenuOpen ? null : origIdx); }
+                          }} title={isSkipped ? "Undo skip" : "Skip — not worth applying"} style={{
+                            ...S.iconBtn,
+                            background: isSkipped ? "rgba(249,115,22,0.12)" : "rgba(255,255,255,0.03)",
+                            color: isSkipped ? "#f97316" : "#52525b",
+                            fontSize: 14,
+                          }}>{isSkipped ? "\u21A9" : "\u2298"}</button>
+
+                          {isSkipMenuOpen && (
+                            <div style={S.skipMenu}>
+                              <div style={{ padding: "8px 12px", fontSize: 11, color: "#71717a", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                                Why skip?
+                              </div>
+                              {SKIP_REASONS.map(r => (
+                                <button key={r.id} onClick={() => skipJob(idx, r.id)} style={S.skipMenuItem}
+                                  onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                                  onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                                >
+                                  <span>{r.icon}</span>
+                                  <span>{r.label}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {!isSkipped && (
+                          <a href={job["Apply Link"]} target="_blank" rel="noopener noreferrer" style={S.applyBtn}
+                            onMouseEnter={e => { e.target.style.transform = "translateY(-1px)"; e.target.style.boxShadow = "0 6px 20px rgba(59,130,246,0.35)"; }}
+                            onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "0 2px 10px rgba(59,130,246,0.2)"; }}
+                          >Apply &rarr;</a>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -438,16 +510,15 @@
                 Run <code style={S.codeInline}>python job_scraper.py --push</code> daily to auto-update
                 &nbsp;&bull;&nbsp; Or import CSV/JSON manually anytime
               </p>
-              <p style={{ margin: "6px 0 0" }}>Data persists in your browser &middot; Star to save &middot; Check to track applications</p>
+              <p style={{ margin: "6px 0 0" }}>
+                &#9733; Save &nbsp;&middot;&nbsp; &#10003; Applied &nbsp;&middot;&nbsp; &#8856; Skip (visa, salary, location, stack, culture)
+              </p>
             </div>
           </div>
         </div>
       );
     }
 
-    // ══════════════════════════════════════════════════════════
-    // STYLES
-    // ══════════════════════════════════════════════════════════
     const S = {
       root: { fontFamily: "'Space Grotesk', sans-serif", background: "#08080c", color: "#e4e4e7", minHeight: "100vh" },
       loadWrap: { display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "#08080c" },
@@ -471,7 +542,7 @@
 
       body: { maxWidth: 1100, margin: "0 auto", padding: "16px 28px 40px" },
 
-      tabs: { display: "flex", gap: 2, background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: 3, width: "fit-content", marginBottom: 14 },
+      tabs: { display: "flex", gap: 2, background: "rgba(255,255,255,0.025)", borderRadius: 8, padding: 3, width: "fit-content" },
       tab: { padding: "7px 16px", borderRadius: 6, border: "none", background: "transparent", color: "#71717a", cursor: "pointer", fontSize: 13, fontWeight: 600, transition: "all 0.15s" },
       tabActive: { background: "rgba(96,165,250,0.12)", color: "#60a5fa" },
 
@@ -486,6 +557,7 @@
       cardList: { display: "flex", flexDirection: "column", gap: 6 },
       card: { background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid rgba(255,255,255,0.05)", padding: "16px 20px", transition: "all 0.2s ease", cursor: "default" },
       cardApplied: { background: "rgba(167,139,250,0.03)", borderColor: "rgba(167,139,250,0.12)" },
+      cardSkipped: { background: "rgba(249,115,22,0.02)", borderColor: "rgba(249,115,22,0.1)" },
       cardInner: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 16, flexWrap: "wrap" },
 
       srcBadge: { fontSize: 10, fontWeight: 700, padding: "3px 8px", borderRadius: 5, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.3 },
@@ -508,13 +580,23 @@
       iconBtn: { width: 36, height: 36, borderRadius: 8, border: "1px solid rgba(255,255,255,0.06)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.15s" },
       applyBtn: { padding: "8px 18px", borderRadius: 8, textDecoration: "none", background: "linear-gradient(135deg, #3b82f6, #6366f1)", color: "#fff", fontSize: 13, fontWeight: 600, transition: "all 0.2s", boxShadow: "0 2px 10px rgba(59,130,246,0.2)", display: "inline-block" },
 
+      skipMenu: {
+        position: "absolute", top: "calc(100% + 6px)", right: 0, zIndex: 100, minWidth: 200,
+        background: "#141418", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)",
+        boxShadow: "0 12px 40px rgba(0,0,0,0.5)", overflow: "hidden",
+      },
+      skipMenuItem: {
+        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 14px",
+        background: "transparent", border: "none", color: "#e4e4e7", fontSize: 13,
+        cursor: "pointer", textAlign: "left", transition: "background 0.1s",
+      },
+
       emptyState: { textAlign: "center", padding: "50px 20px", color: "#52525b", background: "rgba(255,255,255,0.015)", borderRadius: 14, border: "1px dashed rgba(255,255,255,0.06)" },
 
       footer: { marginTop: 40, padding: "20px 0", borderTop: "1px solid rgba(255,255,255,0.04)", textAlign: "center", color: "#3f3f46", fontSize: 12 },
       codeInline: { color: "#60a5fa", fontFamily: "'IBM Plex Mono', monospace", fontSize: 11, background: "rgba(96,165,250,0.08)", padding: "2px 6px", borderRadius: 4 },
     };
 
-    // ── Mount ──
     const root = ReactDOM.createRoot(document.getElementById("root"));
     root.render(<JobBoard />);
   </script>
