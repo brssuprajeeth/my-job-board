@@ -42,8 +42,23 @@ SEATTLE_LOCATIONS = [
     "seattle", "bellevue", "redmond", "kirkland", "bothell",
     "woodinville", "renton", "tukwila", "kent", "tacoma",
     "everett", "issaquah", "sammamish", "mercer island",
-    "washington", "greater seattle", "puget sound", "sea-tac",
-    "wa", "remote",  # include remote jobs too
+    "greater seattle", "puget sound", "sea-tac",
+]
+
+# Locations that only count if paired with "wa" or "washington"
+STATE_MARKERS = [", wa", "washington state", ", washington"]
+
+# Reject if location contains these (foreign/other regions)
+LOCATION_BLOCKLIST = [
+    "poland", "canada", "uk", "london", "ireland", "india",
+    "germany", "berlin", "singapore", "japan", "tokyo",
+    "australia", "sydney", "france", "paris", "brazil",
+    "mexico", "toronto", "vancouver", "montreal", "ottawa",
+    "warsaw", "krakow", "bangalore", "hyderabad", "pune",
+    "tel aviv", "israel", "amsterdam", "netherlands",
+    "new york", "san francisco", "los angeles", "chicago",
+    "austin", "denver", "boston", "atlanta", "miami",
+    "washington, dc", "washington dc", "d.c.",
 ]
 
 SDE_TITLE_KEYWORDS = [
@@ -147,8 +162,29 @@ HEADERS = {
 def is_seattle_area(location_str):
     if not location_str:
         return False
-    loc = str(location_str).lower()
-    return any(kw in loc for kw in SEATTLE_LOCATIONS)
+    loc = str(location_str).lower().strip()
+
+    # Reject known non-Seattle locations first
+    for block in LOCATION_BLOCKLIST:
+        if block in loc:
+            return False
+
+    # Match Seattle-area cities directly
+    for kw in SEATTLE_LOCATIONS:
+        if kw in loc:
+            return True
+
+    # Match state markers (", WA" or "Washington" but not "Washington DC")
+    for marker in STATE_MARKERS:
+        if marker in loc:
+            return True
+
+    # "Remote" only counts if it also mentions US/United States
+    # (skip pure "Remote" with no country — too broad)
+    if "remote" in loc and ("us" in loc or "united states" in loc or "usa" in loc):
+        return True
+
+    return False
 
 
 def is_sde_title(title):

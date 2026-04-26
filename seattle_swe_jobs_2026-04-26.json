@@ -1,187 +1,11 @@
 {
-  "scraped_at": "2026-04-26T12:50:39.371181",
+  "scraped_at": "2026-04-26T12:55:20.406444",
   "date": "2026-04-26",
-  "total_jobs": 89,
+  "total_jobs": 26,
   "experience_range": "3-5 years",
   "location": "Greater Seattle Area",
   "source": "company career portals + job boards",
   "jobs": [
-    {
-      "Job Title": "Software Engineer 2",
-      "Company": "Microsoft",
-      "Location": "Redmond, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4378774357",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer - Open Search",
-      "Company": "IBM",
-      "Location": "Bellevue, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399543667",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer - Open Search",
-      "Company": "IBM",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399526911",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Development Engineer II",
-      "Company": "Blue Origin",
-      "Location": "",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4361735055",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer III, Google Beam",
-      "Company": "Google",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399621426",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer",
-      "Company": "Haystack",
-      "Location": "",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399108300",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer, Kubernetes",
-      "Company": "CoreWeave",
-      "Location": "Bellevue, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4252418191",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Develoment Engineer III - Backend",
-      "Company": "Purpose Brands, LLC",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399194633",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Engineer III, Infrastructure, Google Cloud Compute Infrastructure",
-      "Company": "Google",
-      "Location": "Kirkland, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399659168",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Development Engineer III - React",
-      "Company": "Purpose Brands, LLC",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399190728",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Backend Engineer, Core Technology",
-      "Company": "Stripe",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4190707141",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Software Development Engineer III - Backend",
-      "Company": "Purpose Brands, LLC",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399184728",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": ".Net Full Stack Developer",
-      "Company": "Tata Consultancy Services",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4388986466",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Technical Java Full Stack Developer",
-      "Company": "Tata Consultancy Services",
-      "Location": "Seattle, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4392898065",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": ".Net Full Stack Developer",
-      "Company": "Tata Consultancy Services",
-      "Location": "Bellevue, WA",
-      "Apply Link": "https://www.linkedin.com/jobs/view/4399647203",
-      "Source": "linkedin",
-      "Date Posted": "",
-      "Type": "",
-      "Description": "",
-      "Salary": ""
-    },
-    {
-      "Job Title": "Android Software Engineer, Quality Platform",
-      "Company": "Airbnb",
-      "Location": "Remote, Brazil",
-      "Apply Link": "https://careers.airbnb.com/positions/7744247?gh_jid=7744247",
-      "Source": "greenhouse",
-      "Date Posted": "2026-03-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
     {
       "Job Title": "iOS Software Engineer, Host Pricing",
       "Company": "Airbnb",
@@ -205,54 +29,10 @@
       "Description": ""
     },
     {
-      "Job Title": "Backend Engineer, Core Tech, Canada",
-      "Company": "Stripe",
-      "Location": "Toronto, CAN-Remote",
-      "Apply Link": "https://stripe.com/jobs/search?gh_jid=6567253",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Backend Engineer, Developer Experience & Product Platform ",
-      "Company": "Stripe",
-      "Location": "Toronto Canada, San Francisco, Remote in US, Remote in Canada",
-      "Apply Link": "https://stripe.com/jobs/search?gh_jid=7292520",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Full Stack Engineer, Link",
-      "Company": "Stripe",
-      "Location": "Toronto, Remote in Canada",
-      "Apply Link": "https://stripe.com/jobs/search?gh_jid=6447175",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Fullstack Engineer, Privy",
       "Company": "Stripe",
       "Location": "NYC-Privy, US-Remote ",
       "Apply Link": "https://stripe.com/jobs/search?gh_jid=7091959",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer, Bridge",
-      "Company": "Stripe",
-      "Location": "San Francisco, NY, Seattle",
-      "Apply Link": "https://stripe.com/jobs/search?gh_jid=7277110",
       "Source": "greenhouse",
       "Date Posted": "2026-04-24",
       "Type": "Full-time",
@@ -277,17 +57,6 @@
       "Apply Link": "https://stripe.com/jobs/search?gh_jid=7761694",
       "Source": "greenhouse",
       "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer, Developer (Wallets and Onchain Tools) ",
-      "Company": "Coinbase",
-      "Location": "Remote - Canada",
-      "Apply Link": "https://www.coinbase.com/careers/positions/7673310?gh_jid=7673310",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -326,144 +95,12 @@
       "Description": ""
     },
     {
-      "Job Title": "Android Software Engineer, Mobile Experience",
-      "Company": "Dropbox",
-      "Location": "Remote - Canada: Select locations",
-      "Apply Link": "https://jobs.dropbox.com/listing/7469391?gh_jid=7469391",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Backend Product Software Engineer",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/7752097?gh_jid=7752097",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Backend Product Software Engineer, Payments",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/7642218?gh_jid=7642218",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Frontend Product Software Engineer, Web DX",
-      "Company": "Dropbox",
-      "Location": "Remote - Mexico",
-      "Apply Link": "https://jobs.dropbox.com/listing/7580431?gh_jid=7580431",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Full Stack Product Software Engineer",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/7751394?gh_jid=7751394",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Full Stack Product Software Engineer",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/6449729?gh_jid=6449729",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Full Stack Product Software Engineer",
-      "Company": "Dropbox",
-      "Location": "Remote - Mexico",
-      "Apply Link": "https://jobs.dropbox.com/listing/7172839?gh_jid=7172839",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Full Stack Software Engineer, Dash Experiences",
       "Company": "Dropbox",
       "Location": "Remote - US: Select locations",
       "Apply Link": "https://jobs.dropbox.com/listing/7569140?gh_jid=7569140",
       "Source": "greenhouse",
       "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Full Stack Software Engineer, Dash Experiences",
-      "Company": "Dropbox",
-      "Location": "Remote - Mexico",
-      "Apply Link": "https://jobs.dropbox.com/listing/7569145?gh_jid=7569145",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Infrastructure Software Engineer",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/6330377?gh_jid=6330377",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-22",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Infrastructure Software Engineer, Telemetry",
-      "Company": "Dropbox",
-      "Location": "Remote - Mexico",
-      "Apply Link": "https://jobs.dropbox.com/listing/7684429?gh_jid=7684429",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Infrastructure Software Engineer, Telemetry",
-      "Company": "Dropbox",
-      "Location": "Remote - Poland",
-      "Apply Link": "https://jobs.dropbox.com/listing/7684426?gh_jid=7684426",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Enterprise IAM Software Engineer II",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7675825003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-09",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -480,89 +117,12 @@
       "Description": ""
     },
     {
-      "Job Title": "Software Engineer I, Back-end (Repayment Scheduling)",
-      "Company": "Affirm",
-      "Location": "Remote Spain",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7710972003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer I, Back-end (Repayment Scheduling)",
-      "Company": "Affirm",
-      "Location": "Remote Poland",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7710970003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer I, Full Stack (Consumer Engineering)",
-      "Company": "Affirm",
-      "Location": "Remote Spain",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7609024003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-02-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer I, Full Stack (Consumer Engineering) ",
-      "Company": "Affirm",
-      "Location": "Remote Poland",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7609022003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-07",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer I, Full-Stack (Home and Search Experience)",
       "Company": "Affirm",
       "Location": "Remote US",
       "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7685236003",
       "Source": "greenhouse",
       "Date Posted": "2026-04-09",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II",
-      "Company": "Affirm",
-      "Location": "Remote UK",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7656872003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-16",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, Backend (AI Agents)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7629069003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-02",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, Backend (Consumer Authentication)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7666050003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-20",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -579,45 +139,12 @@
       "Description": ""
     },
     {
-      "Job Title": "Software Engineer II, Backend (Credit Decisioning) ",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7597922003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-02",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, Backend (Identity Decisioning)   ",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7543980003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer II, Backend (Identity Decisioning)   ",
       "Company": "Affirm",
       "Location": "Remote US",
       "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7543978003",
       "Source": "greenhouse",
       "Date Posted": "2026-04-10",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, Backend (PMI Integrations)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7590373003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-22",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -634,43 +161,10 @@
       "Description": ""
     },
     {
-      "Job Title": "Software Engineer II, Full-Stack (Card Acquisition)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7618869003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-02",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, Full-Stack (Marketplace Performance)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7678887003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer II (ML Feature Platform)",
       "Company": "Affirm",
       "Location": "Remote US",
       "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7694294003",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-17",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II (ML Feature Platform)",
-      "Company": "Affirm",
-      "Location": "Remote Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7694296003",
       "Source": "greenhouse",
       "Date Posted": "2026-04-17",
       "Type": "Full-time",
@@ -684,28 +178,6 @@
       "Apply Link": "https://job-boards.greenhouse.io/affirm/jobs/7647925003",
       "Source": "greenhouse",
       "Date Posted": "2026-04-02",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Android Full Stack Engineer, Credit Cards & Banking",
-      "Company": "Robinhood",
-      "Location": "Bellevue, WA; Menlo Park, CA; New York, NY",
-      "Apply Link": "https://boards.greenhouse.io/robinhood/jobs/7490049?t=gh_src=&gh_jid=7490049",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer, Financial Platform",
-      "Company": "Chime",
-      "Location": "New York, NY, USA; San Francisco, CA, USA; Seattle, WA, USA",
-      "Apply Link": "https://boards.greenhouse.io/chime/jobs/8183064002?gh_jid=8183064002",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -744,61 +216,6 @@
       "Description": ""
     },
     {
-      "Job Title": "Salesforce Software Engineer ",
-      "Company": "Okta",
-      "Location": "Warsaw, Poland",
-      "Apply Link": "https://www.okta.com/company/careers/opportunity/7688710?gh_jid=7688710",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-26",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Pre-Sales Systems Engineer, Federal Civilian",
-      "Company": "Pure Storage",
-      "Location": "Remote, Washington D.C.",
-      "Apply Link": "https://job-boards.greenhouse.io/purestorage/jobs/7586683",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-20",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Pre-Sales Systems Engineer, SLED-NJ",
-      "Company": "Pure Storage",
-      "Location": "Newark, New Jersey",
-      "Apply Link": "https://job-boards.greenhouse.io/purestorage/jobs/7776197",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-20",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II, AI Platform",
-      "Company": "Samsara",
-      "Location": "Remote - CA",
-      "Apply Link": "https://www.samsara.com/company/careers/roles/7619925?gh_jid=7619925",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-23",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "D\u00e9veloppeur(se) logiciel \u2013 V\u00e9rification en production  / Software Developer - Production Verification",
-      "Company": "Unity",
-      "Location": "Remote, Quebec, Canada",
-      "Apply Link": "https://unity.com/careers/positions/7669641?gh_jid=7669641",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-01",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer - Production Verification",
       "Company": "Unity",
       "Location": "Remote, Florida, USA",
@@ -821,34 +238,12 @@
       "Description": ""
     },
     {
-      "Job Title": "Software Engineer - SyncSketch/ D\u00e9veloppeur(se) Logiciel",
-      "Company": "Unity",
-      "Location": "Remote, Canada",
-      "Apply Link": "https://unity.com/careers/positions/7523945?gh_jid=7523945",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-08",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer II, FedRamp (Remote Eligible)",
       "Company": "Smartsheet",
       "Location": " -REMOTE, USA-",
       "Apply Link": "https://job-boards.greenhouse.io/smartsheet/jobs/7712828",
       "Source": "greenhouse",
       "Date Posted": "2026-04-22",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer II (Remote Eligible from Bulgaria)",
-      "Company": "Smartsheet",
-      "Location": " -REMOTE, BULGARIA-",
-      "Apply Link": "https://job-boards.greenhouse.io/smartsheet/jobs/6366658",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-13",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -865,89 +260,12 @@
       "Description": ""
     },
     {
-      "Job Title": "Cloud Software Engineer",
-      "Company": "Twilio",
-      "Location": "Remote - Ireland",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7484699",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer",
-      "Company": "Twilio",
-      "Location": "Remote - Estonia",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7647708",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer",
-      "Company": "Twilio",
-      "Location": "Remote - Estonia",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7699251",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
       "Job Title": "Software Engineer",
       "Company": "Twilio",
       "Location": "Remote - US",
       "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7605743",
       "Source": "greenhouse",
       "Date Posted": "2026-04-13",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer",
-      "Company": "Twilio",
-      "Location": "Remote - Ireland",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7747550",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer ",
-      "Company": "Twilio",
-      "Location": "Remote - Ireland",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7822831",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer ",
-      "Company": "Twilio",
-      "Location": "Remote - Spain",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7846633",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer ",
-      "Company": "Twilio",
-      "Location": "Remote - Ireland",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7785202",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
@@ -970,17 +288,6 @@
       "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7301401",
       "Source": "greenhouse",
       "Date Posted": "2026-04-17",
-      "Type": "Full-time",
-      "Salary": "",
-      "Description": ""
-    },
-    {
-      "Job Title": "Software Engineer (L3) Infrastructure",
-      "Company": "Twilio",
-      "Location": "Remote - Canada",
-      "Apply Link": "https://job-boards.greenhouse.io/twilio/jobs/7767260",
-      "Source": "greenhouse",
-      "Date Posted": "2026-04-24",
       "Type": "Full-time",
       "Salary": "",
       "Description": ""
