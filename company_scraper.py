@@ -152,9 +152,24 @@ GOOGLE_FALLBACK_COMPANIES = [
 
 BLOCKED_COMPANIES = ["amazon", "aws", "a2z", "amazon web services"]
 
+# Default: company scraper looks back 7 days
+DEFAULT_DAYS_BACK = 7
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
 }
+
+
+def is_within_days(date_str, days_back):
+    """Check if a date string is within the last N days."""
+    if not date_str:
+        return True  # Keep jobs with no date (can't filter)
+    try:
+        job_date = datetime.strptime(str(date_str)[:10], "%Y-%m-%d")
+        cutoff = datetime.now() - timedelta(days=days_back)
+        return job_date >= cutoff
+    except (ValueError, TypeError):
+        return True  # Keep if date is unparseable
 
 
 # --- FILTERS ---
@@ -226,7 +241,7 @@ def passes_all_filters(title, location, company=""):
 
 # --- GREENHOUSE SCRAPER ---
 
-def scrape_greenhouse(company_name, board_token):
+def scrape_greenhouse(company_name, board_token, days_back=DEFAULT_DAYS_BACK):
     """Scrape jobs from Greenhouse public API."""
     url = f"https://boards-api.greenhouse.io/v1/boards/{board_token}/jobs"
     try:
@@ -246,26 +261,31 @@ def scrape_greenhouse(company_name, board_token):
         location = job.get("location", {}).get("name", "")
         job_url = job.get("absolute_url", "")
         updated = job.get("updated_at", "")
+        date_posted = updated[:10] if updated else ""
 
-        if passes_all_filters(title, location, company_name):
-            results.append({
-                "Job Title": title,
-                "Company": company_name,
-                "Location": location,
-                "Apply Link": job_url,
-                "Source": "greenhouse",
-                "Date Posted": updated[:10] if updated else "",
-                "Type": "Full-time",
-                "Salary": "",
-                "Description": "",
-            })
+        if not passes_all_filters(title, location, company_name):
+            continue
+        if not is_within_days(date_posted, days_back):
+            continue
+
+        results.append({
+            "Job Title": title,
+            "Company": company_name,
+            "Location": location,
+            "Apply Link": job_url,
+            "Source": "greenhouse",
+            "Date Posted": date_posted,
+            "Type": "Full-time",
+            "Salary": "",
+            "Description": "",
+        })
 
     return results
 
 
 # --- LEVER SCRAPER ---
 
-def scrape_lever(company_name, lever_slug):
+def scrape_lever(company_name, lever_slug, days_back=DEFAULT_DAYS_BACK):
     """Scrape jobs from Lever public API."""
     url = f"https://api.lever.co/v0/postings/{lever_slug}"
     try:
@@ -286,25 +306,29 @@ def scrape_lever(company_name, lever_slug):
         created = job.get("createdAt", 0)
         date_str = datetime.fromtimestamp(created / 1000).strftime("%Y-%m-%d") if created else ""
 
-        if passes_all_filters(title, location, company_name):
-            results.append({
-                "Job Title": title,
-                "Company": company_name,
-                "Location": location,
-                "Apply Link": job_url,
-                "Source": "lever",
-                "Date Posted": date_str,
-                "Type": "Full-time",
-                "Salary": "",
-                "Description": "",
-            })
+        if not passes_all_filters(title, location, company_name):
+            continue
+        if not is_within_days(date_str, days_back):
+            continue
+
+        results.append({
+            "Job Title": title,
+            "Company": company_name,
+            "Location": location,
+            "Apply Link": job_url,
+            "Source": "lever",
+            "Date Posted": date_str,
+            "Type": "Full-time",
+            "Salary": "",
+            "Description": "",
+        })
 
     return results
 
 
 # --- JOBSPY FALLBACK (for Google/Workday/Custom companies) ---
 
-def scrape_via_jobspy(company_names):
+def scrape_via_jobspy(company_names, days_back=DEFAULT_DAYS_BACK):
     """Use python-jobspy to search for specific companies on job boards."""
     try:
         from jobspy import scrape_jobs
@@ -313,6 +337,7 @@ def scrape_via_jobspy(company_names):
         print("    Install with: pip install python-jobspy")
         return []
 
+    hours_old = days_back * 24
     results = []
     for company in company_names:
         if is_blocked_company(company):
@@ -328,7 +353,7 @@ def scrape_via_jobspy(company_names):
                 location="Seattle, WA",
                 distance=25,
                 results_wanted=10,
-                hours_old=72,
+                hours_old=hours_old,
                 country_indeed="USA",
             )
             for _, row in jobs.iterrows():
@@ -392,7 +417,7 @@ def load_existing_jobs():
     return []
 
 
-def scrape_all(company_filter=None, ats_filter=None):
+def scrape_all(company_filter=None, ats_filter=None, days_back=DEFAULT_DAYS_BACK):
     """Run all scrapers and merge results."""
     all_jobs = []
 
@@ -403,12 +428,12 @@ def scrape_all(company_filter=None, ats_filter=None):
             gh_companies = {k: v for k, v in gh_companies.items() if company_filter.lower() in k.lower()}
 
         if gh_companies:
-            print(f"\n--- Greenhouse API ({len(gh_companies)} companies) ---")
+            print(f"\n--- Greenhouse API ({len(gh_companies)} companies, past {days_back} days) ---")
             for company, token in gh_companies.items():
                 if is_blocked_company(company):
                     continue
                 print(f"  Scraping {company}...")
-                jobs = scrape_greenhouse(company, token)
+                jobs = scrape_greenhouse(company, token, days_back)
                 print(f"    Found {len(jobs)} matching jobs")
                 all_jobs.extend(jobs)
                 time.sleep(0.3)
@@ -420,12 +445,12 @@ def scrape_all(company_filter=None, ats_filter=None):
             lv_companies = {k: v for k, v in lv_companies.items() if company_filter.lower() in k.lower()}
 
         if lv_companies:
-            print(f"\n--- Lever API ({len(lv_companies)} companies) ---")
+            print(f"\n--- Lever API ({len(lv_companies)} companies, past {days_back} days) ---")
             for company, slug in lv_companies.items():
                 if is_blocked_company(company):
                     continue
                 print(f"  Scraping {company}...")
-                jobs = scrape_lever(company, slug)
+                jobs = scrape_lever(company, slug, days_back)
                 print(f"    Found {len(jobs)} matching jobs")
                 all_jobs.extend(jobs)
                 time.sleep(0.3)
@@ -437,8 +462,8 @@ def scrape_all(company_filter=None, ats_filter=None):
             fb_companies = [c for c in fb_companies if company_filter.lower() in c.lower()]
 
         if fb_companies:
-            print(f"\n--- Job Board Search ({len(fb_companies)} companies) ---")
-            board_jobs = scrape_via_jobspy(fb_companies)
+            print(f"\n--- Job Board Search ({len(fb_companies)} companies, past {days_back} days) ---")
+            board_jobs = scrape_via_jobspy(fb_companies, days_back)
             print(f"  Found {len(board_jobs)} total matching jobs from boards")
             all_jobs.extend(board_jobs)
 
@@ -535,6 +560,7 @@ def main():
     parser = argparse.ArgumentParser(description="Scrape company career portals for Seattle SDE-2 jobs")
     parser.add_argument("--company", type=str, help="Scrape only this company")
     parser.add_argument("--ats", type=str, choices=["greenhouse", "lever", "jobboard"], help="Scrape only this ATS type")
+    parser.add_argument("--days", type=int, default=DEFAULT_DAYS_BACK, help="Days to look back (default: 7)")
     parser.add_argument("--push", action="store_true", help="Push results to GitHub")
     parser.add_argument("--fresh", action="store_true", help="Ignore existing jobs, start fresh")
     args = parser.parse_args()
@@ -542,6 +568,7 @@ def main():
     print("=" * 60)
     print("  Company Career Portal Scraper")
     print(f"  Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+    print(f"  Lookback: {args.days} days")
     print(f"  Target: Mid-level SDE, Greater Seattle Area")
     print("=" * 60)
 
@@ -551,7 +578,7 @@ def main():
         print(f"\n  Loaded {len(existing)} existing jobs for dedup")
 
     # Scrape
-    jobs = scrape_all(company_filter=args.company, ats_filter=args.ats)
+    jobs = scrape_all(company_filter=args.company, ats_filter=args.ats, days_back=args.days)
 
     if not jobs:
         print("\n  No jobs found.")
