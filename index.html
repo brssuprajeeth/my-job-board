@@ -147,6 +147,7 @@
       const [appliedKeys, setAppliedKeys] = useState(new Set());
       const [savedKeys, setSavedKeys] = useState(new Set());
       const [skippedKeys, setSkippedKeys] = useState({});  // { jobKey: "visa" | ... }
+      const [evaluateKeys, setEvaluateKeys] = useState(new Set()); // queued for Career-Ops evaluation
       const [removedKeys, setRemovedKeys] = useState(new Set()); // permanently removed job keys
       const [importing, setImporting] = useState(false);
       const [tab, setTab] = useState("all");
@@ -201,6 +202,7 @@
             setAppliedKeys(new Set(data.applied || []));
             setSavedKeys(new Set(data.saved || []));
             setSkippedKeys(data.skipped || {});
+            setEvaluateKeys(new Set(data.evaluate || []));
             setRemovedKeys(new Set(data.removed || []));
             setLastFetch(data.lastFetch || null);
             setConfigUrl(data.configUrl || DEFAULT_FETCH_URL);
@@ -211,11 +213,12 @@
       }, [fbReady]);
 
       // Save to Firebase (debounced) + localStorage cache
-      const persistToFirebase = useCallback((applied, saved, skipped, removed, lf, url) => {
+      const persistToFirebase = useCallback((applied, saved, skipped, evaluate, removed, lf, url) => {
         const data = {
           applied: [...applied],
           saved: [...saved],
           skipped,
+          evaluate: [...evaluate],
           removed: [...removed],
           lastFetch: lf,
           configUrl: url,
@@ -233,8 +236,8 @@
       }, []);
 
       useEffect(() => {
-        if (loaded && fbReady) persistToFirebase(appliedKeys, savedKeys, skippedKeys, removedKeys, lastFetch, configUrl);
-      }, [appliedKeys, savedKeys, skippedKeys, removedKeys, lastFetch, configUrl, loaded, fbReady]);
+        if (loaded && fbReady) persistToFirebase(appliedKeys, savedKeys, skippedKeys, evaluateKeys, removedKeys, lastFetch, configUrl);
+      }, [appliedKeys, savedKeys, skippedKeys, evaluateKeys, removedKeys, lastFetch, configUrl, loaded, fbReady]);
 
       // Auto-fetch job data
       const fetchRemote = useCallback(async () => {
@@ -268,6 +271,7 @@
         let f = [...allJobs];
         if (tab === "saved") f = f.filter(j => savedKeys.has(jobKey(j)));
         else if (tab === "applied") f = f.filter(j => appliedKeys.has(jobKey(j)));
+        else if (tab === "evaluate") f = f.filter(j => evaluateKeys.has(jobKey(j)));
         else if (tab === "skipped") f = f.filter(j => skippedKeys[jobKey(j)] !== undefined);
         else if (tab === "all" && !showSkipped) f = f.filter(j => skippedKeys[jobKey(j)] === undefined);
 
@@ -296,7 +300,7 @@
           return sortDir === "asc" ? (va < vb ? -1 : 1) : (va > vb ? -1 : 1);
         });
         setFiltered(f);
-      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedKeys, appliedKeys, skippedKeys, showSkipped]);
+      }, [allJobs, search, sourceFilter, dateFilter, sortBy, sortDir, tab, savedKeys, appliedKeys, skippedKeys, evaluateKeys, showSkipped]);
 
       const handleImport = async (e) => {
         const file = e.target.files?.[0];
@@ -313,8 +317,34 @@
 
       const toggleApplied = (job) => { const k = jobKey(job); setAppliedKeys(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; }); };
       const toggleSaved = (job) => { const k = jobKey(job); setSavedKeys(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; }); };
+      const toggleEvaluate = (job) => { const k = jobKey(job); setEvaluateKeys(p => { const s = new Set(p); s.has(k) ? s.delete(k) : s.add(k); return s; }); };
       const skipJob = (job, reason) => { setSkippedKeys(prev => ({ ...prev, [jobKey(job)]: reason })); setSkipMenuOpen(null); };
       const unskipJob = (job) => { const k = jobKey(job); setSkippedKeys(prev => { const n = { ...prev }; delete n[k]; return n; }); };
+
+      // Export evaluate queue as JSON for Career-Ops processing
+      const exportEvalQueue = () => {
+        const evalJobs = allJobs.filter(j => evaluateKeys.has(jobKey(j)));
+        if (evalJobs.length === 0) { alert("No jobs queued for evaluation."); return; }
+        const payload = {
+          exported_at: new Date().toISOString(),
+          total: evalJobs.length,
+          jobs: evalJobs.map(j => ({
+            title: j["Job Title"] || "",
+            company: j.Company || "",
+            location: j.Location || "",
+            apply_link: j["Apply Link"] || "",
+            source: j.Source || "",
+            date_posted: j["Date Posted"] || "",
+            salary: j.Salary || "",
+            description: j.Description || "",
+          })),
+        };
+        const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a"); a.href = url;
+        a.download = "eval_queue_" + new Date().toISOString().split("T")[0] + ".json";
+        a.click(); URL.revokeObjectURL(url);
+      };
 
       const removeJob = (job) => {
         if (confirm("Remove \"" + (job["Job Title"]||"") + "\" at " + (job.Company||"") + "? This hides it permanently.")) {
@@ -346,6 +376,7 @@
         total: allJobs.length,
         today: allJobs.filter(j => j["Date Posted"] === new Date().toISOString().split("T")[0]).length,
         saved: savedKeys.size,
+        evaluate: evaluateKeys.size,
         applied: appliedKeys.size,
         skipped: skippedCount,
       };
@@ -415,6 +446,7 @@
                   { label: "Total", value: stats.total, color: "#60a5fa" },
                   { label: "Today", value: stats.today, color: "#34d399" },
                   { label: "Saved", value: stats.saved, color: "#fbbf24" },
+                  { label: "Evaluate", value: stats.evaluate, color: "#06b6d4" },
                   { label: "Applied", value: stats.applied, color: "#a78bfa" },
                   { label: "Skipped", value: stats.skipped, color: "#f97316" },
                 ].map(s => (
@@ -434,6 +466,7 @@
                 {[
                   { id: "all", label: "All Jobs (" + (stats.total - (showSkipped ? 0 : skippedCount)) + ")" },
                   { id: "saved", label: "Saved (" + stats.saved + ")" },
+                  { id: "evaluate", label: "Evaluate (" + stats.evaluate + ")" },
                   { id: "applied", label: "Applied (" + stats.applied + ")" },
                   { id: "skipped", label: "Skipped (" + stats.skipped + ")" },
                 ].map(t => (
@@ -443,6 +476,11 @@
                   }}>{t.label}</button>
                 ))}
               </div>
+              {tab === "evaluate" && stats.evaluate > 0 && (
+                <button onClick={exportEvalQueue} style={{...S.btnPrimary, background: "rgba(6,182,212,0.1)", borderColor: "rgba(6,182,212,0.3)", color: "#06b6d4", fontSize: 12}}>
+                  Export Queue ({stats.evaluate})
+                </button>
+              )}
               {tab === "all" && (
                 <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#52525b", cursor: "pointer", userSelect: "none" }}>
                   <input type="checkbox" checked={showSkipped} onChange={e => setShowSkipped(e.target.checked)} style={{ accentColor: "#f97316" }} />
@@ -514,6 +552,9 @@
                           </span>
                           <span style={{...S.cardTitle, ...(isSkipped ? { textDecoration: "line-through", textDecorationColor: "rgba(249,115,22,0.4)" } : {})}}>{job["Job Title"]}</span>
                           {isApplied && <span style={S.appliedBadge}>Applied</span>}
+                          {evaluateKeys.has(jk) && !isApplied && (
+                            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 5, background: "rgba(6,182,212,0.12)", color: "#06b6d4", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>Queued</span>
+                          )}
                           {isSkipped && skipInfo && (
                             <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 5, background: skipInfo.color + "18", color: skipInfo.color, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, border: "1px solid " + skipInfo.color + "30" }}>
                               {skipInfo.icon} {skipInfo.label}
@@ -548,6 +589,10 @@
                         <button onClick={() => toggleSaved(job)} title={isSaved ? "Unsave" : "Save"} style={{
                           ...S.iconBtn, background: isSaved ? "rgba(251,191,36,0.12)" : "rgba(255,255,255,0.03)", color: isSaved ? "#fbbf24" : "#52525b",
                         }}>{isSaved ? "\u2605" : "\u2606"}</button>
+
+                        <button onClick={() => toggleEvaluate(job)} title={evaluateKeys.has(jk) ? "Remove from eval queue" : "Queue for evaluation"} style={{
+                          ...S.iconBtn, background: evaluateKeys.has(jk) ? "rgba(6,182,212,0.12)" : "rgba(255,255,255,0.03)", color: evaluateKeys.has(jk) ? "#06b6d4" : "#52525b", fontSize: 13,
+                        }}>{evaluateKeys.has(jk) ? "\u2691" : "\u2690"}</button>
 
                         <button onClick={() => toggleApplied(job)} title="Mark applied" style={{
                           ...S.iconBtn, background: isApplied ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.03)", color: isApplied ? "#a78bfa" : "#52525b",
@@ -600,7 +645,7 @@
                 &nbsp;&bull;&nbsp; Or import CSV/JSON manually anytime
               </p>
               <p style={{ margin: "6px 0 0" }}>
-                &#9733; Save &nbsp;&middot;&nbsp; &#10003; Applied &nbsp;&middot;&nbsp; &#8856; Skip &nbsp;&middot;&nbsp; Synced across devices via Firebase
+                &#9733; Save &nbsp;&middot;&nbsp; &#9873; Evaluate &nbsp;&middot;&nbsp; &#10003; Applied &nbsp;&middot;&nbsp; &#8856; Skip &nbsp;&middot;&nbsp; Synced across devices via Firebase
               </p>
             </div>
           </div>
